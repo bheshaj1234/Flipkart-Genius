@@ -58,4 +58,9 @@ const ProductSchema = new mongoose.Schema({
   }
 });
 
+// Optimization Indexes for faster queries
+ProductSchema.index({ sellerId: 1 });
+ProductSchema.index({ batchId: 1 });
+ProductSchema.index({ status: 1 });
+
 export default mongoose.model('Product', ProductSchema);

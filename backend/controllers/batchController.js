@@ -42,6 +42,10 @@ export const uploadBatch = async (req, res) => {
           const price = Number(row.price || row.Price);
           const category = row.category || row.Category;
           const imageUrls = row.imageUrls || row.image_urls || row.image || row.Image;
+          
+          const color = row.color || row.Color || '';
+          const pattern = row.pattern || row.Pattern || '';
+          const material = row.material || row.Material || '';
 
           return {
             sellerId: req.user._id,
@@ -50,7 +54,10 @@ export const uploadBatch = async (req, res) => {
               title,
               price: isNaN(price) ? 0 : price,
               category,
-              imageUrls: imageUrls ? imageUrls.split(',').map(url => url.trim()).filter(Boolean) : []
+              imageUrls: imageUrls ? imageUrls.split(',').map(url => url.trim()).filter(Boolean) : [],
+              color,
+              pattern,
+              material
             },
             finalData: {
               title: title || '',
@@ -370,7 +377,10 @@ export const addSingleProduct = async (req, res) => {
         title,
         price: Number(price),
         category,
-        imageUrls: imageUrl ? [imageUrl] : []
+        imageUrls: imageUrl ? [imageUrl] : [],
+        color,
+        pattern,
+        material
       },
       aiGenerated: {
         title,

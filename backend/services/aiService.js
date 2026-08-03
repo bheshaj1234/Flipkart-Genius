@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 import redis from '../config/redis.js';
+import sharp from 'sharp';
 
 dotenv.config();
 
@@ -64,64 +65,70 @@ export const getCachedOrRun = async (cachePrefix, uniqueString, runFn, ttl = 360
 /**
  * FEATURE 1: Auto-generate SEO-friendly title & bullet-point descriptions
  */
-export const generateProductListing = async (rawTitle, category) => {
-  console.log(`🤖 AI Service generating product listing for: "${rawTitle}" in category: "${category}"...`);
+export const generateProductListing = async (rawTitle, category, attributes = []) => {
+  return getCachedOrRun('cache:listing', `${rawTitle}:${category}:${JSON.stringify(attributes)}`, async () => {
+    console.log(`🤖 AI Service generating product listing for: "${rawTitle}" in category: "${category}"...`);
 
-  // If Gemini API is configured, run live call
-  if (gemini) {
-    try {
-      const prompt = `Generate an e-commerce product listing for:
-Product Title: ${rawTitle}
-Category: ${category}
+    const attributesStr = attributes.length > 0 ? attributes.join(", ") : "None specified";
 
-Return ONLY valid JSON with keys: title, bulletPoints (array of 4), description (60-80 words). No markdown, no preamble.`;
-      const result = await gemini.generateContent(prompt);
-      const text = result.response.text();
-      // Clean JSON fences defenses
-      const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-      return JSON.parse(cleanJson);
-    } catch (err) {
-      console.warn('Gemini API call failed, falling back to local enrichment:', err.message);
-    }
-  }
-
-  // If Claude is configured
-  if (claude) {
-    try {
-      const response = await claude.messages.create({
-        model: "claude-3-sonnet-20240229",
-        max_tokens: 400,
-        messages: [{
-          role: "user",
-          content: `Generate an e-commerce product listing for:
+    // If Gemini API is configured, run live call
+    if (gemini) {
+      try {
+        const prompt = `Generate an e-commerce product listing for:
 Product: ${rawTitle}
 Category: ${category}
+Attributes: ${attributesStr}
+
+Return ONLY valid JSON with keys: title, bulletPoints (array of 4), description (60-80 words). No markdown, no preamble.`;
+        const result = await gemini.generateContent(prompt);
+        const text = result.response.text();
+        // Clean JSON fences defenses
+        const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(cleanJson);
+      } catch (err) {
+        console.warn('Gemini API call failed, falling back to other provider/local:', err.message);
+      }
+    }
+
+    // If Claude is configured
+    if (claude) {
+      try {
+        const response = await claude.messages.create({
+          model: "claude-3-5-sonnet-20241022",
+          max_tokens: 400,
+          messages: [{
+            role: "user",
+            content: `Generate an e-commerce product listing for:
+Product: ${rawTitle}
+Category: ${category}
+Attributes: ${attributesStr}
 
 Return ONLY valid JSON with keys: title, bulletPoints (array of 4), description (60-80 words). No markdown, no preamble.`
-        }]
-      });
-      const cleanJson = response.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
-      return JSON.parse(cleanJson);
-    } catch (err) {
-      console.warn('Claude API call failed, falling back:', err.message);
+          }]
+        });
+        const cleanJson = response.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(cleanJson);
+      } catch (err) {
+        console.warn('Claude API call failed, falling back:', err.message);
+      }
     }
-  }
 
-  // Local Mock Generator Fallback (Ensures the sandbox works without API keys)
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const titleClean = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1).toLowerCase();
-      resolve({
-        title: `Premium ${titleClean} - Limited Edition`,
-        description: `Elevate your lifestyle with our newly designed ${titleClean}. Carefully manufactured using top-tier materials to provide long-lasting durability, exceptional utility, and high aesthetic appeal. Seamlessly blends modern comfort with classic styling, making it a must-have catalog item for the upcoming season.`,
-        bulletPoints: [
-          `Engineered for optimal comfort and day-long wearability`,
-          `Crafted from eco-friendly premium materials`,
-          `Features modern styling cues that elevate any catalog selection`,
-          `Universal fit designed to cater to premium customer standards`
-        ]
-      });
-    }, 400);
+    // Local Mock Generator Fallback (Ensures the sandbox works without API keys)
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const titleClean = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1).toLowerCase();
+        resolve({
+          title: `Premium ${titleClean} - Limited Edition`,
+          description: `Elevate your lifestyle with our newly designed ${titleClean}. Carefully manufactured using top-tier materials to provide long-lasting durability, exceptional utility, and high aesthetic appeal. ${attributes.length > 0 ? `Featuring custom attributes: ${attributesStr}.` : ''} Seamlessly blends modern comfort with classic styling, making it a must-have catalog item for the upcoming season.`,
+          bulletPoints: [
+            `Engineered for optimal comfort and day-long wearability`,
+            `Crafted from eco-friendly premium materials`,
+            `Features modern styling cues that elevate any catalog selection`,
+            `Universal fit designed to cater to premium customer standards`
+          ]
+        });
+      }, 400);
+    });
   });
 };
 
@@ -129,56 +136,100 @@ Return ONLY valid JSON with keys: title, bulletPoints (array of 4), description 
  * FEATURE 2: Image-to-attribute extraction (color, pattern, material guess from photo)
  */
 export const extractImageAttributes = async (imageUrl) => {
-  console.log(`🤖 AI Service extracting attributes from image URL: ${imageUrl}...`);
+  return getCachedOrRun('cache:vision', imageUrl, async () => {
+    console.log(`🤖 AI Service extracting attributes from image URL: ${imageUrl}...`);
 
-  if (gemini) {
-    try {
-      // Fetch the image URL as a buffer and convert to Gemini base64 inlineData part
-      const response = await fetch(imageUrl);
-      if (!response.ok) throw new Error(`HTTP error downloading image: ${response.statusText}`);
-      const arrayBuffer = await response.arrayBuffer();
-      const imagePart = {
-        inlineData: {
-          data: Buffer.from(arrayBuffer).toString('base64'),
-          mimeType: response.headers.get('content-type') || 'image/jpeg'
+    if (gemini) {
+      try {
+        let imageBuffer;
+        let mimeType;
+
+        if (imageUrl.startsWith('data:image/')) {
+          mimeType = imageUrl.substring(5, imageUrl.indexOf(';'));
+          const base64Data = imageUrl.substring(imageUrl.indexOf(',') + 1);
+          imageBuffer = Buffer.from(base64Data, 'base64');
+        } else {
+          const response = await fetch(imageUrl);
+          if (!response.ok) throw new Error(`HTTP error downloading image: ${response.statusText}`);
+          imageBuffer = Buffer.from(await response.arrayBuffer());
+          mimeType = response.headers.get('content-type') || 'image/jpeg';
         }
-      };
 
-      const prompt = `Analyze this product photo. Extract the following physical attributes: color, pattern, material.
-Return ONLY valid JSON with keys: color, pattern, material. Be extremely concise. Do NOT wrap in markdown blocks, just return raw JSON.`;
-      
-      const result = await gemini.generateContent([prompt, imagePart]);
-      const text = result.response.text();
-      const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-      return JSON.parse(cleanJson);
-    } catch (err) {
-      console.warn('Gemini Vision API failed, falling back to keyword matcher:', err.message);
+        // Compress/resize using sharp library to keep latency and payload costs down
+        let compressedBase64 = imageBuffer.toString('base64');
+        let targetMimeType = mimeType;
+
+        try {
+          const resizedBuffer = await sharp(imageBuffer)
+            .resize({ width: 500, withoutEnlargement: true })
+            .jpeg({ quality: 80 })
+            .toBuffer();
+          compressedBase64 = resizedBuffer.toString('base64');
+          targetMimeType = 'image/jpeg';
+          console.log(`📸 Image compressed with Sharp: size reduced!`);
+        } catch (sharpError) {
+          console.warn('Sharp compression failed, sending raw buffer:', sharpError.message);
+        }
+
+        const imagePart = {
+          inlineData: {
+            data: compressedBase64,
+            mimeType: targetMimeType
+          }
+        };
+
+        const prompt = `Analyze this product photo. Return ONLY JSON with keys: color, pattern, material_guess, styleNotes. Be concise.`;
+        
+        const result = await gemini.generateContent([prompt, imagePart]);
+        const text = result.response.text();
+        const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(cleanJson);
+        
+        // Map material_guess back to material for database schema compatibility
+        return {
+          color: parsed.color || '',
+          pattern: parsed.pattern || '',
+          material: parsed.material_guess || '',
+          material_guess: parsed.material_guess || '',
+          styleNotes: parsed.styleNotes || ''
+        };
+      } catch (err) {
+        console.warn('Gemini Vision API failed, falling back to keyword matcher:', err.message);
+      }
     }
-  }
 
-  // Local Mock Image Extractor Fallback (Analyzes keywords in title to guess attributes)
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const textToAnalyze = imageUrl.toLowerCase();
-      
-      let color = 'Multi-color';
-      if (textToAnalyze.includes('blue') || textToAnalyze.includes('royal')) color = 'Royal Blue';
-      else if (textToAnalyze.includes('red') || textToAnalyze.includes('crimson')) color = 'Crimson Red';
-      else if (textToAnalyze.includes('white')) color = 'Off-White';
-      else if (textToAnalyze.includes('black')) color = 'Charcoal Black';
+    // Local Mock Image Extractor Fallback (Analyzes keywords in title to guess attributes)
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const textToAnalyze = imageUrl.toLowerCase();
+        
+        let color = 'Multi-color';
+        if (textToAnalyze.includes('blue') || textToAnalyze.includes('royal')) color = 'Royal Blue';
+        else if (textToAnalyze.includes('red') || textToAnalyze.includes('crimson')) color = 'Crimson Red';
+        else if (textToAnalyze.includes('white')) color = 'Off-White';
+        else if (textToAnalyze.includes('black')) color = 'Charcoal Black';
 
-      let pattern = 'Solid';
-      if (textToAnalyze.includes('floral')) pattern = 'Floral Print';
-      else if (textToAnalyze.includes('striped')) pattern = 'Striped';
-      else if (textToAnalyze.includes('check')) pattern = 'Checked';
+        let pattern = 'Solid';
+        if (textToAnalyze.includes('floral')) pattern = 'Floral Print';
+        else if (textToAnalyze.includes('striped')) pattern = 'Striped';
+        else if (textToAnalyze.includes('check')) pattern = 'Checked';
 
-      let material = 'Cotton Blend';
-      if (textToAnalyze.includes('leather')) material = 'Textured Vegan Leather';
-      else if (textToAnalyze.includes('linen')) material = 'Linen-Cotton Blend';
-      else if (textToAnalyze.includes('georgette')) material = 'Georgette Polyester';
+        let material_guess = 'Cotton Blend';
+        if (textToAnalyze.includes('leather')) material_guess = 'Textured Vegan Leather';
+        else if (textToAnalyze.includes('linen')) material_guess = 'Linen-Cotton Blend';
+        else if (textToAnalyze.includes('georgette')) material_guess = 'Georgette Polyester';
 
-      resolve({ color, pattern, material });
-    }, 300);
+        let styleNotes = 'Classic catalog style fit for modern wardrobe.';
+
+        resolve({ 
+          color, 
+          pattern, 
+          material: material_guess,
+          material_guess,
+          styleNotes
+        });
+      }, 300);
+    });
   });
 };
 
@@ -294,8 +345,8 @@ Return ONLY valid JSON with keys: title, description. No markdown fences, no cha
   } else if (promptLower.includes('short') || promptLower.includes('brief')) {
     descVal = `${descVal.slice(0, 100)}...`;
   } else {
-    titleVal = `${titleVal} (Optimized)`;
-    descVal = `${descVal} [Optimized: ${instruction}]`;
+    titleVal = title.includes('(Optimized)') ? title : `${title} (Optimized)`;
+    descVal = `Introducing the fully optimized ${title.replace(/\(Optimized\)/g, '').trim()}. This catalog listing is enriched with premium SEO-optimized keywords to enhance search visibility. Engineered with precision, this item combines high performance, absolute durability, and a sleek contemporary design, making it the perfect addition to your curated selection.`;
   }
   return { title: titleVal, description: descVal };
 };

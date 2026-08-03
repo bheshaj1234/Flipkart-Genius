@@ -36,8 +36,14 @@ const worker = new Worker('upload-enrichment-queue', async (job) => {
     // Socket status update: Starting AI classification
     emitLog(batchId, `[Row ${productId}] Starting classification and copies generation...`);
 
+    // Collect dynamic attributes from raw input
+    const attributes = [];
+    if (product.rawInput.color) attributes.push(`Color: ${product.rawInput.color}`);
+    if (product.rawInput.pattern) attributes.push(`Pattern: ${product.rawInput.pattern}`);
+    if (product.rawInput.material) attributes.push(`Material: ${product.rawInput.material}`);
+
     // 1. Text generation (Title, Description, SEO highlights)
-    const copyResult = await generateProductListing(rawInput.title, rawInput.category);
+    const copyResult = await generateProductListing(rawInput.title, rawInput.category, attributes);
     
     // 2. Image vision attributes extraction (if image url exists)
     let extractedAttributes = { color: '', pattern: '', material: '' };

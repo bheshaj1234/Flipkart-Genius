@@ -15,7 +15,10 @@ const ProductSchema = new mongoose.Schema({
     title: { type: String },
     price: { type: Number },
     category: { type: String },
-    imageUrls: { type: [String], default: [] }
+    imageUrls: { type: [String], default: [] },
+    color: { type: String },
+    pattern: { type: String },
+    material: { type: String }
   },
   aiGenerated: {
     title: { type: String },
@@ -24,7 +27,9 @@ const ProductSchema = new mongoose.Schema({
     extractedAttributes: {
       color: { type: String },
       pattern: { type: String },
-      material: { type: String }
+      material: { type: String },
+      material_guess: { type: String },
+      styleNotes: { type: String }
     },
     suggestedCategory: { type: String },
     suggestedSubcategory: { type: String },

@@ -105,31 +105,32 @@ export default function Dashboard() {
       <div className="absolute top-[-10%] left-[-20%] w-[35rem] h-[35rem] rounded-full bg-blue-600/5 dark:bg-blue-500/10 blur-[130px] pointer-events-none -z-10 animate-pulse-slow" />
       <div className="absolute bottom-[-10%] right-[-20%] w-[40rem] h-[40rem] rounded-full bg-[#2874f0]/5 dark:bg-emerald-500/5 blur-[150px] pointer-events-none -z-10" />
 
-      {/* Welcome Banner Card (Premium Glassmorphism Style) */}
-      <div className="relative overflow-hidden rounded-3xl border border-slate-200/60 dark:border-slate-800/40 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 p-6 md:p-8 text-white shadow-xl shadow-blue-500/10 dark:shadow-none transition-all duration-300">
-        <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none translate-x-10 translate-y-10">
+      {/* Welcome Banner Card (Premium Dark Glassmorphic Style with Sleek Gradient Accents) */}
+      <div className="relative overflow-hidden rounded-3xl border border-slate-200/50 dark:border-slate-800/60 bg-white/40 dark:bg-slate-950/40 backdrop-blur-xl p-6 md:p-8 text-slate-800 dark:text-slate-100 shadow-xl shadow-slate-100/50 dark:shadow-none transition-all duration-300">
+        <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-blue-500/10 dark:bg-blue-400/5 blur-3xl pointer-events-none -z-10 animate-pulse-slow" />
+        <div className="absolute right-0 bottom-0 opacity-5 dark:opacity-[0.03] pointer-events-none translate-x-10 translate-y-10 text-slate-900 dark:text-white">
           <Layers size={300} />
         </div>
         <div className="relative z-10 max-w-2xl space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/20 border border-white/10 backdrop-blur-sm">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-blue-500/10 dark:bg-blue-400/10 border border-blue-500/20 dark:border-blue-400/20 text-blue-600 dark:text-blue-400">
             Flipkart Genius v1.1
           </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-            Welcome back, <span className="text-yellow-300 underline decoration-wavy decoration-yellow-300/40 underline-offset-4">{storeName}</span> 👋
+          <h1 className="text-2xl md:text-3xl font-black tracking-tight leading-tight">
+            Welcome back, <span className="bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-500 dark:from-blue-400 dark:to-emerald-400 bg-clip-text text-transparent">{storeName}</span> 👋
           </h1>
-          <p className="text-blue-100/90 text-sm md:text-base leading-relaxed font-medium">
-            AI Engine is active. Upload bulk inventory CSVs or manually publish single listings. Mismatches, violations, and categories will be audited dynamically.
+          <p className="text-slate-600 dark:text-slate-400 text-sm md:text-base leading-relaxed font-medium">
+            The AI engine is running in real-time. Drag & drop catalog sheets to enrich product copy instantly, or manually audit listing violations.
           </p>
           <div className="pt-2 flex flex-wrap gap-3">
             <Link
               to="/upload"
-              className="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-blue-700 font-bold uppercase tracking-wider text-xs rounded-xl px-5 py-3 transition-all active:scale-[0.98] shadow-lg shadow-black/10"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-extrabold uppercase tracking-wider text-xs rounded-xl px-5 py-3.5 transition-all active:scale-[0.98] shadow-lg shadow-blue-500/20 border border-blue-600/10"
             >
               <UploadCloud size={16} /> Upload Bulk Catalog
             </Link>
             <Link
               to="/add-product"
-              className="inline-flex items-center gap-2 bg-blue-500/35 hover:bg-blue-500/50 text-white font-bold uppercase tracking-wider text-xs border border-white/20 rounded-xl px-5 py-3 transition-all active:scale-[0.98]"
+              className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/40 dark:hover:bg-slate-800/70 text-slate-700 dark:text-slate-300 font-extrabold uppercase tracking-wider text-xs border border-slate-200 dark:border-slate-800/80 rounded-xl px-5 py-3.5 transition-all active:scale-[0.98]"
             >
               <PlusCircle size={16} /> Quick Add Product
             </Link>

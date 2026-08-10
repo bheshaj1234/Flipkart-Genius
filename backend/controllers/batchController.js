@@ -3,7 +3,7 @@ import Papa from 'papaparse';
 import UploadBatch from '../models/UploadBatch.js';
 import Product from '../models/Product.js';
 import { addBatchJobs } from '../queues/uploadQueue.js'; 
-import { optimizeProductWithCopilot, classifyCategory, verifyImageContent } from '../services/aiService.js';
+import { optimizeProductWithCopilot, classifyCategory, verifyImageContent, extractImageAttributes } from '../services/aiService.js';
 
 // @desc    Upload inventory CSV and enqueue background enrichment jobs
 // @route   POST /api/batches/upload
@@ -315,10 +315,11 @@ export const addSingleProduct = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide title, price, category, and subcategory.' });
     }
 
-    // Run category classification and image content verification in parallel to prevent timeouts
-    const [aiResult, imageVerification] = await Promise.all([
+    // Run category classification, image content verification, AND visual attributes extraction in parallel
+    const [aiResult, imageVerification, extractedAttributes] = await Promise.all([
       classifyCategory(title, description || `Manually added ${title} to the product listings catalog.`),
-      verifyImageContent(title, imageUrl)
+      verifyImageContent(title, imageUrl),
+      imageUrl ? extractImageAttributes(imageUrl) : Promise.resolve({ color: '', pattern: '', material: '', material_guess: '', styleNotes: '' })
     ]);
 
     // Check if user's manual choice matches AI's classification
@@ -362,11 +363,16 @@ export const addSingleProduct = async (req, res) => {
       });
     }
 
+    // Use user-provided attribute if they typed it, otherwise fallback to AI extracted attributes!
+    const finalColor = color || extractedAttributes.color || '';
+    const finalPattern = pattern || extractedAttributes.pattern || '';
+    const finalMaterial = material || extractedAttributes.material || '';
+
     // 2. Build final data maps and models
     const finalAttributes = new Map();
-    if (color) finalAttributes.set('color', color);
-    if (pattern) finalAttributes.set('pattern', pattern);
-    if (material) finalAttributes.set('material', material);
+    if (finalColor) finalAttributes.set('color', finalColor);
+    if (finalPattern) finalAttributes.set('pattern', finalPattern);
+    if (finalMaterial) finalAttributes.set('material', finalMaterial);
 
     const product = await Product.create({
       sellerId: req.user._id,
@@ -378,9 +384,9 @@ export const addSingleProduct = async (req, res) => {
         price: Number(price),
         category,
         imageUrls: imageUrl ? [imageUrl] : [],
-        color,
-        pattern,
-        material
+        color: finalColor,
+        pattern: finalPattern,
+        material: finalMaterial
       },
       aiGenerated: {
         title,
@@ -388,10 +394,10 @@ export const addSingleProduct = async (req, res) => {
         bulletPoints: [
           `Engineered for optimal comfort and day-long wearability`,
           `Features modern styling and custom properties`,
-          `Made with high-quality ${material || 'materials'} specifications`,
+          `Made with high-quality ${finalMaterial || 'materials'} specifications`,
           `Custom styled and manually categorized catalog item`
         ],
-        extractedAttributes: { color, pattern, material },
+        extractedAttributes,
         suggestedCategory: aiResult.category || category,
         suggestedSubcategory: aiResult.subcategory || subcategory,
         confidenceScore

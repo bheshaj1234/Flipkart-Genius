@@ -391,7 +391,7 @@ Return ONLY valid JSON with keys: title, description. No markdown fences, no cha
     descVal = `${descVal.slice(0, 100)}...`;
   } else {
     titleVal = title.includes('(Optimized)') ? title : `${title} (Optimized)`;
-    descVal = `Introducing the fully optimized ${title.replace(/\(Optimized\)/g, '').trim()}. This catalog listing is enriched with premium SEO-optimized keywords to enhance search visibility. Engineered with precision, this item combines high performance, absolute durability, and a sleek contemporary design, making it the perfect addition to your curated selection.`;
+    descVal = `Introducing the fully optimized ${title.replace(/\(Optimized\)/g, '').trim()}. [Copilot Adjustment: Applied custom instructions for "${instruction}"]. This catalog listing is enriched with premium SEO-optimized keywords to enhance search visibility. Engineered with precision, this item combines high performance, absolute durability, and a sleek contemporary design.`;
   }
   return { title: titleVal, description: descVal };
 };

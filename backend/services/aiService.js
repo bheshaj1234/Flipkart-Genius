@@ -10,14 +10,38 @@ dotenv.config();
 
 // Initialize APIs if keys exist
 let gemini = null;
+let genAI = null;
 let claude = null;
 let openai = null;
 
 if (process.env.GEMINI_API_KEY) {
-  // Setup Google Generative AI (Gemini Pro)
-  const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  gemini = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  // Setup Google Generative AI
+  genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  gemini = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 }
+
+// Wrapper with automatic legacy model fallback (resolves 404s for restricted keys/regions)
+export const generateWithFallback = async (prompt, imagePart = null) => {
+  if (!genAI) throw new Error('Gemini API is not initialized');
+
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const contentInput = imagePart ? [prompt, imagePart] : prompt;
+    const result = await model.generateContent(contentInput);
+    return result.response.text();
+  } catch (err) {
+    const errMsg = err.message.toLowerCase();
+    if (errMsg.includes('not found') || errMsg.includes('not supported') || errMsg.includes('404')) {
+      console.warn('⚠️ Gemini 1.5 Flash model not supported/found on this key. Falling back to gemini-pro / gemini-1.5-flash-latest...');
+      const fallbackModelName = imagePart ? 'gemini-1.5-flash-latest' : 'gemini-pro';
+      const modelFallback = genAI.getGenerativeModel({ model: fallbackModelName });
+      const contentInput = imagePart ? [prompt, imagePart] : prompt;
+      const resultFallback = await modelFallback.generateContent(contentInput);
+      return resultFallback.response.text();
+    }
+    throw err;
+  }
+};
 
 if (process.env.ANTHROPIC_API_KEY) {
   claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -26,6 +50,63 @@ if (process.env.ANTHROPIC_API_KEY) {
 if (process.env.OPENAI_API_KEY) {
   openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 }
+
+// Local helper fallbacks to guarantee robust API error handling (prevents crashes/hangs if Gemini keys are invalid/blocked)
+export const getLocalCategoryClassification = (title) => {
+  const titleLower = title.toLowerCase();
+  
+  let category = 'Apparel';
+  let subcategory = 'Kurtas';
+  let confidence = 0.94;
+
+  if (titleLower.includes('trousers') || titleLower.includes('pant')) {
+    subcategory = 'Trousers';
+    confidence = 0.88;
+  } else if (titleLower.includes('dress') || titleLower.includes('maxi')) {
+    subcategory = 'Dresses';
+    confidence = 0.55;
+  } else if (titleLower.includes('handbag') || titleLower.includes('bag') || titleLower.includes('purse')) {
+    category = 'Accessories';
+    subcategory = 'Handbags';
+    confidence = 0.96;
+  } else if (titleLower.includes('watch') || titleLower.includes('clock')) {
+    category = 'Accessories';
+    subcategory = 'Watches';
+    confidence = 0.92;
+  } else if (titleLower.includes('mouse') || titleLower.includes('mice') || titleLower.includes('pointing device')) {
+    category = 'Electronics';
+    subcategory = 'Mice';
+    confidence = 0.98;
+  } else if (titleLower.includes('keyboard') || titleLower.includes('keypad')) {
+    category = 'Electronics';
+    subcategory = 'Keyboards';
+    confidence = 0.97;
+  } else if (titleLower.includes('headphone') || titleLower.includes('earphone') || titleLower.includes('audio')) {
+    category = 'Electronics';
+    subcategory = 'Headphones';
+    confidence = 0.95;
+  } else if (titleLower.includes('laptop') || titleLower.includes('computer') || titleLower.includes('notebook') || titleLower.includes('expertbook')) {
+    category = 'Electronics';
+    subcategory = 'Laptops';
+    confidence = 0.96;
+  }
+  
+  return { category, subcategory, confidence };
+};
+
+export const getLocalImageVerification = (title, imageUrl) => {
+  const titleLower = title.toLowerCase();
+  let matches = true;
+  let reason = 'Image content verified';
+  
+  if (imageUrl && imageUrl.startsWith('data:image/')) {
+    if (titleLower.includes('mouse')) {
+      matches = false;
+      reason = 'Visual mismatch detected: Image is a screenshot/dashboard instead of a physical mouse.';
+    }
+  }
+  return { matches, reason };
+};
 
 /**
  * Generic Redis Caching Wrapper Helper
@@ -80,8 +161,7 @@ Category: ${category}
 Attributes: ${attributesStr}
 
 Return ONLY valid JSON with keys: title, bulletPoints (array of 4), description (60-80 words). No markdown, no preamble.`;
-        const result = await gemini.generateContent(prompt);
-        const text = result.response.text();
+        const text = await generateWithFallback(prompt);
         // Clean JSON fences defenses
         const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
         return JSON.parse(cleanJson);
@@ -149,10 +229,19 @@ export const extractImageAttributes = async (imageUrl) => {
           const base64Data = imageUrl.substring(imageUrl.indexOf(',') + 1);
           imageBuffer = Buffer.from(base64Data, 'base64');
         } else {
-          const response = await fetch(imageUrl);
-          if (!response.ok) throw new Error(`HTTP error downloading image: ${response.statusText}`);
-          imageBuffer = Buffer.from(await response.arrayBuffer());
-          mimeType = response.headers.get('content-type') || 'image/jpeg';
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          
+          try {
+            const response = await fetch(imageUrl, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (!response.ok) throw new Error(`HTTP error downloading image: ${response.statusText}`);
+            imageBuffer = Buffer.from(await response.arrayBuffer());
+            mimeType = response.headers.get('content-type') || 'image/jpeg';
+          } catch (fetchErr) {
+            clearTimeout(timeoutId);
+            throw fetchErr;
+          }
         }
 
         // Compress/resize using sharp library to keep latency and payload costs down
@@ -180,8 +269,7 @@ export const extractImageAttributes = async (imageUrl) => {
 
         const prompt = `Analyze this product photo. Return ONLY JSON with keys: color, pattern, material_guess, styleNotes. Be concise.`;
         
-        const result = await gemini.generateContent([prompt, imagePart]);
-        const text = result.response.text();
+        const text = await generateWithFallback(prompt, imagePart);
         const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
         const parsed = JSON.parse(cleanJson);
         
@@ -253,59 +341,17 @@ Allowed Categories and Subcategories:
 
 Return ONLY valid JSON with keys: category, subcategory, confidence (a decimal score between 0 and 1 representing your confidence). Do NOT wrap in markdown blocks, just return raw JSON text.`;
         
-        const result = await gemini.generateContent(prompt);
-        const text = result.response.text();
+        const text = await generateWithFallback(prompt);
         const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
         return JSON.parse(cleanJson);
       } catch (err) {
         console.warn('Gemini category classification failed, falling back:', err.message);
+        return getLocalCategoryClassification(title);
       }
     }
 
     // Local Category Classifier Fallback (Checks title keywords to map Flipkart categories)
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const titleLower = title.toLowerCase();
-        
-        let category = 'Apparel';
-        let subcategory = 'Kurtas';
-        let confidence = 0.94; // default high
-
-        if (titleLower.includes('trousers') || titleLower.includes('pant')) {
-          subcategory = 'Trousers';
-          confidence = 0.88;
-        } else if (titleLower.includes('dress') || titleLower.includes('maxi')) {
-          subcategory = 'Dresses';
-          confidence = 0.55; // Intentional low confidence match to demo audit reviews!
-        } else if (titleLower.includes('handbag') || titleLower.includes('bag') || titleLower.includes('purse')) {
-          category = 'Accessories';
-          subcategory = 'Handbags';
-          confidence = 0.96;
-        } else if (titleLower.includes('watch') || titleLower.includes('clock')) {
-          category = 'Accessories';
-          subcategory = 'Watches';
-          confidence = 0.92;
-        } else if (titleLower.includes('mouse') || titleLower.includes('mice') || titleLower.includes('pointing device')) {
-          category = 'Electronics';
-          subcategory = 'Mice';
-          confidence = 0.98;
-        } else if (titleLower.includes('keyboard') || titleLower.includes('keypad')) {
-          category = 'Electronics';
-          subcategory = 'Keyboards';
-          confidence = 0.97;
-        } else if (titleLower.includes('headphone') || titleLower.includes('earphone') || titleLower.includes('audio')) {
-          category = 'Electronics';
-          subcategory = 'Headphones';
-          confidence = 0.95;
-        } else if (titleLower.includes('laptop') || titleLower.includes('computer') || titleLower.includes('notebook')) {
-          category = 'Electronics';
-          subcategory = 'Laptops';
-          confidence = 0.96;
-        }
-
-        resolve({ category, subcategory, confidence });
-      }, 250);
-    });
+    return getLocalCategoryClassification(title);
   });
 };
 
@@ -323,8 +369,7 @@ Current Title: ${title}
 Current Description: ${description}
 
 Return ONLY valid JSON with keys: title, description. No markdown fences, no chat text.`;
-      const result = await gemini.generateContent(prompt);
-      const text = result.response.text();
+      const text = await generateWithFallback(prompt);
       const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
       return JSON.parse(cleanJson);
     } catch (err) {
@@ -373,15 +418,24 @@ export const verifyImageContent = async (title, imageUrl) => {
             }
           };
         } else {
-          const response = await fetch(imageUrl);
-          if (!response.ok) throw new Error(`HTTP error downloading image: ${response.statusText}`);
-          const arrayBuffer = await response.arrayBuffer();
-          imagePart = {
-            inlineData: {
-              data: Buffer.from(arrayBuffer).toString('base64'),
-              mimeType: response.headers.get('content-type') || 'image/jpeg'
-            }
-          };
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          
+          try {
+            const response = await fetch(imageUrl, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (!response.ok) throw new Error(`HTTP error downloading image: ${response.statusText}`);
+            const arrayBuffer = await response.arrayBuffer();
+            imagePart = {
+              inlineData: {
+                data: Buffer.from(arrayBuffer).toString('base64'),
+                mimeType: response.headers.get('content-type') || 'image/jpeg'
+              }
+            };
+          } catch (fetchErr) {
+            clearTimeout(timeoutId);
+            throw fetchErr;
+          }
         }
 
         const prompt = `You are a product catalog auditor. Check if this photo shows the actual product described by the title: "${title}".
@@ -392,32 +446,16 @@ Return ONLY valid JSON with keys:
 
 Do NOT wrap in markdown blocks, just return raw JSON.`;
         
-        const result = await gemini.generateContent([prompt, imagePart]);
-        const text = result.response.text();
+        const text = await generateWithFallback(prompt, imagePart);
         const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
         return JSON.parse(cleanJson);
       } catch (err) {
-        console.warn('Gemini image verification failed, falling back:', err.message);
+        console.warn('Gemini image verification failed, falling back to mock:', err.message);
+        return getLocalImageVerification(title, imageUrl);
       }
     }
 
     // Local fallback matcher
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const titleLower = title.toLowerCase();
-        
-        let matches = true;
-        let reason = 'Image content verified';
-        
-        if (imageUrl.startsWith('data:image/')) {
-          if (titleLower.includes('mouse')) {
-            matches = false;
-            reason = 'Visual mismatch detected: Image is a screenshot/dashboard instead of a physical mouse.';
-          }
-        }
-        
-        resolve({ matches, reason });
-      }, 200);
-    });
+    return getLocalImageVerification(title, imageUrl);
   });
 };

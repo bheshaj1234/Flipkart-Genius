@@ -13,7 +13,10 @@ try {
   const connectionOptions = {
     host,
     port,
-    maxRetriesPerRequest: null
+    connectTimeout: 2000,
+    commandTimeout: 1500,
+    maxRetriesPerRequest: 2,
+    enableOfflineQueue: false
   };
   
   if (password) {

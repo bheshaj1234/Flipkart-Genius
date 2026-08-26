@@ -6,6 +6,7 @@ dotenv.config();
 const host = process.env.REDIS_HOST || '127.0.0.1';
 const port = parseInt(process.env.REDIS_PORT || '6379');
 const password = process.env.REDIS_PASSWORD || undefined;
+const isLocal = host === '127.0.0.1' || host === 'localhost';
 
 let redis = null;
 
@@ -16,7 +17,8 @@ try {
     connectTimeout: 2000,
     commandTimeout: 1500,
     maxRetriesPerRequest: 2,
-    enableOfflineQueue: false
+    enableOfflineQueue: false,
+    ...(isLocal ? {} : { tls: {} })
   };
   
   if (password) {

@@ -459,3 +459,42 @@ export const copilotOptimizeProduct = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// @desc    Update dynamic pricing preferences for a product
+// @route   PUT /api/batches/products/:id/pricing
+// @access  Private
+export const updateProductPricing = async (req, res) => {
+  try {
+    const { enabled, minPrice, maxPrice, pricingStrategy, festivalMode } = req.body;
+    
+    const product = await Product.findOne({ _id: req.params.id, sellerId: req.user._id });
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
+    product.dynamicPricing = {
+      enabled: enabled !== undefined ? enabled : product.dynamicPricing.enabled,
+      minPrice: minPrice !== undefined ? Number(minPrice) : product.dynamicPricing.minPrice,
+      maxPrice: maxPrice !== undefined ? Number(maxPrice) : product.dynamicPricing.maxPrice,
+      pricingStrategy: pricingStrategy || product.dynamicPricing.pricingStrategy,
+      festivalMode: festivalMode !== undefined ? festivalMode : product.dynamicPricing.festivalMode,
+      competitorPrice: product.dynamicPricing.competitorPrice,
+      lastChecked: product.dynamicPricing.lastChecked
+    };
+
+    // If dynamic pricing is enabled, run the optimizer immediately to update finalData.price!
+    if (product.dynamicPricing.enabled) {
+      const { optimizeProductPrice } = await import('../services/pricingService.js');
+      await optimizeProductPrice(product._id);
+      
+      // Reload product from DB to get the updated values
+      const updatedProduct = await Product.findById(product._id);
+      return res.status(200).json({ success: true, message: 'Dynamic pricing updated and optimized', product: updatedProduct });
+    } else {
+      await product.save();
+      return res.status(200).json({ success: true, message: 'Dynamic pricing preferences updated', product });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

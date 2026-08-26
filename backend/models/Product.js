@@ -57,6 +57,19 @@ const ProductSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  dynamicPricing: {
+    enabled: { type: Boolean, default: false },
+    minPrice: { type: Number, default: 0 },
+    maxPrice: { type: Number, default: 0 },
+    competitorPrice: { type: Number, default: 0 },
+    pricingStrategy: {
+      type: String,
+      enum: ['match_lowest', 'demand_surge', 'maximize_margin'],
+      default: 'match_lowest'
+    },
+    festivalMode: { type: Boolean, default: false },
+    lastChecked: { type: Date }
+  },
   createdAt: {
     type: Date,
     default: Date.now

@@ -18,6 +18,39 @@ export default function ProductGridRow({ product, onClose, onSave }) {
     material: product.finalData.attributes?.material || ''
   });
 
+  // Dynamic Pricing states
+  const [pricingEnabled, setPricingEnabled] = useState(product.dynamicPricing?.enabled || false);
+  const [minPrice, setMinPrice] = useState(product.dynamicPricing?.minPrice || 0);
+  const [maxPrice, setMaxPrice] = useState(product.dynamicPricing?.maxPrice || 0);
+  const [pricingStrategy, setPricingStrategy] = useState(product.dynamicPricing?.pricingStrategy || 'match_lowest');
+  const [festivalMode, setFestivalMode] = useState(product.dynamicPricing?.festivalMode || false);
+  const [competitorPrice, setCompetitorPrice] = useState(product.dynamicPricing?.competitorPrice || 0);
+  const [isPricingSaving, setIsPricingSaving] = useState(false);
+
+  const handlePricingSave = async (e) => {
+    e.preventDefault();
+    setIsPricingSaving(true);
+    try {
+      const res = await API.put(`/batches/products/${product._id}/pricing`, {
+        enabled: pricingEnabled,
+        minPrice,
+        maxPrice,
+        pricingStrategy,
+        festivalMode
+      });
+      if (res.data.success) {
+        setCompetitorPrice(res.data.product.dynamicPricing.competitorPrice);
+        setEditedPrice(res.data.product.finalData.price);
+        alert('AI Dynamic Pricing preferences updated successfully!');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update dynamic pricing preferences.');
+    } finally {
+      setIsPricingSaving(false);
+    }
+  };
+
   // Copilot states
   const [copilotPrompt, setCopilotPrompt] = useState('');
   const [isCopilotLoading, setIsCopilotLoading] = useState(false);
@@ -441,6 +474,102 @@ export default function ProductGridRow({ product, onClose, onSave }) {
                       />
                     </div>
                   </div>
+                </div>
+
+                {/* AI Dynamic Pricing Engine Settings */}
+                <div className="bg-gradient-to-br from-indigo-50/80 to-blue-50/40 border border-indigo-100 p-5 rounded-2xl space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-black text-indigo-950 flex items-center gap-1.5 uppercase tracking-wide">
+                      ⚡ AI Dynamic Pricing Engine
+                    </span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={pricingEnabled}
+                        onChange={(e) => setPricingEnabled(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                  </div>
+
+                  {pricingEnabled && (
+                    <div className="space-y-3.5 border-t border-indigo-100/60 pt-3 transition-all duration-300">
+                      
+                      {/* Price Analytics Display */}
+                      <div className="grid grid-cols-3 gap-3 bg-white/70 backdrop-blur-sm border border-indigo-100/40 p-3 rounded-xl">
+                        <div className="text-center border-r border-slate-100">
+                          <span className="text-[9px] font-bold text-slate-400 block uppercase">Current Price</span>
+                          <span className="text-xs font-extrabold text-slate-700">₹{editedPrice}</span>
+                        </div>
+                        <div className="text-center border-r border-slate-100">
+                          <span className="text-[9px] font-bold text-slate-400 block uppercase">Competitor</span>
+                          <span className="text-xs font-extrabold text-amber-600">₹{competitorPrice || 'Calculating...'}</span>
+                        </div>
+                        <div className="text-center">
+                          <span className="text-[9px] font-bold text-indigo-600 block uppercase">AI Recommendation</span>
+                          <span className="text-xs font-black text-indigo-600">₹{competitorPrice ? (pricingStrategy === 'match_lowest' ? competitorPrice - 15 : pricingStrategy === 'demand_surge' ? Math.round(competitorPrice * 1.1) : Math.round(competitorPrice * 1.15)) : editedPrice}</span>
+                        </div>
+                      </div>
+
+                      {/* Inputs grid */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-600 block mb-1">Min Price (Floor) *</label>
+                          <input
+                            type="number"
+                            value={minPrice}
+                            onChange={(e) => setMinPrice(Number(e.target.value))}
+                            className="block w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-800 text-xs focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-medium"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-600 block mb-1">Max Price (Ceiling)</label>
+                          <input
+                            type="number"
+                            value={maxPrice}
+                            onChange={(e) => setMaxPrice(Number(e.target.value))}
+                            className="block w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-800 text-xs focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-medium"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Strategy & Holiday Mode */}
+                      <div className="grid grid-cols-2 gap-3 items-end">
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-600 block mb-1">Optimizing Strategy</label>
+                          <select
+                            value={pricingStrategy}
+                            onChange={(e) => setPricingStrategy(e.target.value)}
+                            className="block w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-800 text-xs focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-medium"
+                          >
+                            <option value="match_lowest">Match / Undercut Competitor</option>
+                            <option value="demand_surge">Surge Pricing Strategy</option>
+                            <option value="maximize_margin">Maximize Listing Margin</option>
+                          </select>
+                        </div>
+                        <div className="flex items-center justify-between bg-white border border-slate-200/80 px-2.5 py-1.5 rounded-lg h-[29.5px]">
+                          <span className="text-[10px] font-bold text-slate-600">Festival Mode</span>
+                          <input 
+                            type="checkbox"
+                            checked={festivalMode}
+                            onChange={(e) => setFestivalMode(e.target.checked)}
+                            className="w-3.5 h-3.5 text-indigo-600 border-slate-350 rounded focus:ring-indigo-500 cursor-pointer"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Save rules button */}
+                      <button
+                        type="button"
+                        onClick={handlePricingSave}
+                        disabled={isPricingSaving}
+                        className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-indigo-500/10 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                      >
+                        {isPricingSaving ? 'Optimizing Price...' : 'Update & Run AI Pricing Rules'}
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* AI Listing Copilot Chat Panel */}

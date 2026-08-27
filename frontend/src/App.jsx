@@ -264,7 +264,7 @@ export default function App() {
         {/* Authenticated Dashboard Routes */}
         <Route path="/dashboard" element={
           <DashboardLayout theme={theme} toggleTheme={toggleTheme}>
-            <Dashboard />
+            <Dashboard theme={theme} />
           </DashboardLayout>
         } />
         <Route path="/upload" element={

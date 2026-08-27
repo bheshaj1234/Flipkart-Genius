@@ -20,7 +20,7 @@ import {
 import { mockBatches } from '../utils/mockData';
 import API from '../services/api';
 
-export default function Dashboard() {
+export default function Dashboard({ theme }) {
   const [batches, setBatches] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);

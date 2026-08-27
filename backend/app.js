@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import authRoutes from './routes/authRoutes.js';
 import batchRoutes from './routes/batchRoutes.js';
@@ -70,15 +71,26 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const frontendDist = path.join(__dirname, '../frontend/dist');
 
-// Serve static assets
-app.use(express.static(frontendDist));
+if (fs.existsSync(frontendDist)) {
+  // Serve static assets
+  app.use(express.static(frontendDist));
 
-// Handle React routing, return all requests to React app
-app.get('*', (req, res, next) => {
-  if (req.url.startsWith('/api')) {
-    return next();
-  }
-  res.sendFile(path.join(frontendDist, 'index.html'));
-});
+  // Handle React routing, return all requests to React app
+  app.get('*', (req, res, next) => {
+    if (req.url.startsWith('/api')) {
+      return next();
+    }
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+} else {
+  // Return a friendly JSON welcome message when split-deployed
+  app.get('/', (req, res) => {
+    res.status(200).json({
+      success: true,
+      message: 'Flipkart Genius AI Backend API is running successfully!',
+      documentation: '/api/health'
+    });
+  });
+}
 
 export default app;

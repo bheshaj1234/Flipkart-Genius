@@ -467,6 +467,10 @@ export const updateProductPricing = async (req, res) => {
   try {
     const { enabled, minPrice, maxPrice, pricingStrategy, festivalMode } = req.body;
     
+    if (!/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid product ID format' });
+    }
+    
     const product = await Product.findOne({ _id: req.params.id, sellerId: req.user._id });
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found' });

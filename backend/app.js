@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import authRoutes from './routes/authRoutes.js';
 import batchRoutes from './routes/batchRoutes.js';
 import rateLimit from 'express-rate-limit';
@@ -62,6 +64,21 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date(),
     service: 'bulk-uploader-backend-api'
   });
+});
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const frontendDist = path.join(__dirname, '../frontend/dist');
+
+// Serve static assets
+app.use(express.static(frontendDist));
+
+// Handle React routing, return all requests to React app
+app.get('*', (req, res, next) => {
+  if (req.url.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(frontendDist, 'index.html'));
 });
 
 export default app;

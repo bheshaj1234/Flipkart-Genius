@@ -22,6 +22,7 @@ import API from '../services/api';
 
 export default function Dashboard() {
   const [batches, setBatches] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const storeName = sessionStorage.getItem('seller_store') || 'Seller Store';
 
@@ -34,6 +35,8 @@ export default function Dashboard() {
     } catch (err) {
       console.error('Failed to fetch batches from backend API:', err);
       setBatches(mockBatches);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -145,7 +148,11 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total Batches</h3>
-              <p className="text-3xl font-bold font-mono text-slate-900 dark:text-white mt-2">{batches.length}</p>
+              {isLoading ? (
+                <div className="h-8 w-16 bg-slate-200 dark:bg-slate-800 animate-pulse rounded-lg mt-2" />
+              ) : (
+                <p className="text-3xl font-bold font-mono text-slate-900 dark:text-white mt-2">{batches.length}</p>
+              )}
             </div>
             <div className="p-3 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded-2xl transition-all group-hover:scale-110">
               <BarChart3 size={20} />
@@ -161,7 +168,11 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Enriched Drafts</h3>
-              <p className="text-3xl font-bold font-mono text-slate-900 dark:text-white mt-2">{enrichedProducts}</p>
+              {isLoading ? (
+                <div className="h-8 w-16 bg-slate-200 dark:bg-slate-800 animate-pulse rounded-lg mt-2" />
+              ) : (
+                <p className="text-3xl font-bold font-mono text-slate-900 dark:text-white mt-2">{enrichedProducts}</p>
+              )}
             </div>
             <div className="p-3 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 rounded-2xl transition-all group-hover:scale-110">
               <CheckCircle2 size={20} />
@@ -177,7 +188,11 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Flagged Audit Review</h3>
-              <p className="text-3xl font-bold font-mono text-rose-500 dark:text-rose-400 mt-2">{totalFailedRows}</p>
+              {isLoading ? (
+                <div className="h-8 w-16 bg-slate-200 dark:bg-slate-800 animate-pulse rounded-lg mt-2" />
+              ) : (
+                <p className="text-3xl font-bold font-mono text-rose-500 dark:text-rose-400 mt-2">{totalFailedRows}</p>
+              )}
             </div>
             <div className="p-3 bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400 rounded-2xl transition-all group-hover:scale-110">
               <AlertTriangle size={20} />
@@ -193,7 +208,11 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Enrichment Success</h3>
-              <p className="text-3xl font-bold font-mono text-indigo-600 dark:text-indigo-400 mt-2">{successPercentage}%</p>
+              {isLoading ? (
+                <div className="h-8 w-16 bg-slate-200 dark:bg-slate-800 animate-pulse rounded-lg mt-2" />
+              ) : (
+                <p className="text-3xl font-bold font-mono text-indigo-600 dark:text-indigo-400 mt-2">{successPercentage}%</p>
+              )}
             </div>
             <div className="p-3 bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400 rounded-2xl transition-all group-hover:scale-110">
               <Activity size={20} />
@@ -226,7 +245,25 @@ export default function Dashboard() {
             </div>
 
             <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
-              {batches.length === 0 ? (
+              {isLoading ? (
+                [1, 2, 3].map((n) => (
+                  <div key={n} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 animate-pulse">
+                    <div className="space-y-3.5 flex-1">
+                      <div className="h-5 bg-slate-200 dark:bg-slate-800/80 rounded-lg w-1/3" />
+                      <div className="h-3 bg-slate-100 dark:bg-slate-850 rounded w-1/2" />
+                      <div className="space-y-1.5 max-w-md pt-2">
+                        <div className="h-2 bg-slate-100 dark:bg-slate-850 rounded w-1/4" />
+                        <div className="h-2 bg-slate-100 dark:bg-slate-850 rounded w-full" />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 shrink-0">
+                      <div className="h-8 w-16 bg-slate-200 dark:bg-slate-800 rounded-xl" />
+                      <div className="h-8 w-24 bg-slate-200 dark:bg-slate-800 rounded-xl" />
+                      <div className="h-8 w-8 bg-slate-200 dark:bg-slate-800 rounded-xl" />
+                    </div>
+                  </div>
+                ))
+              ) : batches.length === 0 ? (
                 <div className="text-center py-12 text-slate-400 dark:text-slate-500 font-medium">
                   <FileText className="mx-auto text-slate-300 dark:text-slate-700 mb-3" size={36} />
                   No upload batches found. Click "Upload Bulk Catalog" to begin.

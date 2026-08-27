@@ -9,6 +9,7 @@ import Register from './pages/Register';
 import Landing from './pages/Landing';
 import AddProduct from './pages/AddProduct';
 import FlipkartLogo from './components/FlipkartLogo';
+import HeroDemo from './components/ui/demo';
 
 // Layout wrapper for authenticated pages
 const DashboardLayout = ({ children, theme, toggleTheme }) => {
@@ -285,6 +286,7 @@ export default function App() {
 
         {/* Landing Page */}
         <Route path="/" element={<Landing theme={theme} toggleTheme={toggleTheme} />} />
+        <Route path="/demo" element={<HeroDemo />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

@@ -47,6 +47,7 @@ export default function Landing({ theme, toggleTheme }) {
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center gap-8 text-xs font-semibold uppercase tracking-wider">
             <Link to="/" className={theme === 'dark' ? 'text-white' : 'text-slate-950'}>Home</Link>
+            <Link to="/demo" className="hover:text-blue-500 transition-colors text-blue-500 font-bold">Space Demo 🌌</Link>
             {isLoggedIn && (
               <>
                 <Link to="/dashboard" className="hover:text-blue-500 transition-colors">Dashboard</Link>

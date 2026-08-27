@@ -14,12 +14,27 @@ export default function Landing({ theme, toggleTheme }) {
     window.location.reload();
   };
 
+  const partners = [
+    { name: "Flipkart" },
+    { name: "Amazon" },
+    { name: "Meesho" },
+    { name: "Myntra" },
+    { name: "Nykaa" }
+  ];
+
   return (
     <div className={`min-h-screen font-sans transition-colors duration-500 flex flex-col justify-between relative overflow-hidden dot-grid ${
       theme === 'dark' 
         ? 'bg-black text-slate-100' 
         : 'bg-slate-50 text-slate-800'
     }`}>
+      {/* Space Theme Background Image */}
+      <img
+        src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1920"
+        alt=""
+        className="w-full h-full object-cover absolute top-0 right-0 bottom-0 left-0 -z-20 opacity-[0.18] dark:opacity-[0.25] pointer-events-none"
+      />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#000] -z-20" />
       
       {/* Background Brand Blue Glow Spheres (Dark Mode Only) */}
       {theme === 'dark' && (
@@ -47,7 +62,6 @@ export default function Landing({ theme, toggleTheme }) {
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center gap-8 text-xs font-semibold uppercase tracking-wider">
             <Link to="/" className={theme === 'dark' ? 'text-white' : 'text-slate-950'}>Home</Link>
-            <Link to="/demo" className="hover:text-blue-500 transition-colors text-blue-500 font-bold">Space Demo 🌌</Link>
             {isLoggedIn && (
               <>
                 <Link to="/dashboard" className="hover:text-blue-500 transition-colors">Dashboard</Link>
@@ -199,6 +213,26 @@ export default function Landing({ theme, toggleTheme }) {
               </Link>
             </>
           )}
+        </div>
+        {/* Partners Integration Grid */}
+        <div className="mx-auto mt-16 max-w-5xl w-full">
+          <p className="animate-fade-slide-in-1 text-[10px] font-bold font-mono tracking-widest text-[#2874f0] dark:text-blue-450 uppercase text-center opacity-80">
+            OPTIMIZED FOR LEADING E-COMMERCE CHANNELS
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 animate-fade-slide-in-2 mt-6 items-center justify-items-center gap-4">
+            {partners.map((partner, index) => (
+              <div
+                key={index}
+                className={`px-5 py-2.5 rounded-xl border text-[11px] font-mono font-bold tracking-widest uppercase transition-all duration-300 opacity-70 hover:opacity-100 hover:scale-[1.03] cursor-default bg-slate-900/40 backdrop-blur-md ${
+                  theme === 'dark' 
+                    ? 'border-slate-800 text-slate-300' 
+                    : 'border-slate-200 text-slate-600 shadow-sm'
+                }`}
+              >
+                {partner.name}
+              </div>
+            ))}
+          </div>
         </div>
 
       </section>

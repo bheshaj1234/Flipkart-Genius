@@ -103,7 +103,7 @@ export default function Dashboard() {
     : 100;
 
   return (
-    <div className="space-y-8 relative">
+    <div className="space-y-8 relative dot-grid p-4 md:p-8 rounded-3xl min-h-screen">
       {/* Dynamic Background Blur Glows */}
       <div className="absolute top-[-10%] left-[-20%] w-[35rem] h-[35rem] rounded-full bg-blue-600/5 dark:bg-blue-500/10 blur-[130px] pointer-events-none -z-10 animate-pulse-slow" />
       <div className="absolute bottom-[-10%] right-[-20%] w-[40rem] h-[40rem] rounded-full bg-[#2874f0]/5 dark:bg-emerald-500/5 blur-[150px] pointer-events-none -z-10" />
@@ -115,7 +115,7 @@ export default function Dashboard() {
           <Layers size={300} />
         </div>
         <div className="relative z-10 max-w-2xl space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-blue-500/10 dark:bg-blue-400/10 border border-blue-500/20 dark:border-blue-400/20 text-blue-600 dark:text-blue-400">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-blue-500/10 dark:bg-blue-400/10 border border-blue-500/20 dark:border-blue-400/20 text-blue-600 dark:text-blue-400 font-mono">
             Flipkart Genius v1.1
           </div>
           <h1 className="text-2xl md:text-3xl font-black tracking-tight leading-tight">
@@ -127,13 +127,17 @@ export default function Dashboard() {
           <div className="pt-2 flex flex-wrap gap-3">
             <Link
               to="/upload"
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-extrabold uppercase tracking-wider text-xs rounded-xl px-5 py-3.5 transition-all active:scale-[0.98] shadow-lg shadow-blue-500/20 border border-blue-600/10"
+              className="inline-flex items-center gap-2 btn-classy btn-classy-primary px-5 py-3.5 transition-all text-xs"
             >
               <UploadCloud size={16} /> Upload Bulk Catalog
             </Link>
             <Link
               to="/add-product"
-              className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/40 dark:hover:bg-slate-800/70 text-slate-700 dark:text-slate-300 font-extrabold uppercase tracking-wider text-xs border border-slate-200 dark:border-slate-800/80 rounded-xl px-5 py-3.5 transition-all active:scale-[0.98]"
+              className={`inline-flex items-center gap-2 px-5 py-3.5 transition-all text-xs border rounded-xl active:scale-[0.98] btn-classy ${
+                theme === 'dark'
+                  ? 'bg-slate-950/60 border-slate-800 hover:bg-slate-900 text-slate-350 hover:text-white'
+                  : 'bg-white border-slate-205 hover:bg-slate-50 text-slate-700'
+              }`}
             >
               <PlusCircle size={16} /> Quick Add Product
             </Link>
@@ -326,10 +330,10 @@ export default function Dashboard() {
                         <div className="flex items-center gap-2">
                           <Link
                             to={`/review/${batch._id}`}
-                            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold transition-all border ${
+                            className={`inline-flex items-center gap-1.5 px-3.5 py-2 text-xs transition-all btn-classy ${
                               batch.status === 'processing'
                                 ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed pointer-events-none'
-                                : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-600/10 shadow-sm shadow-blue-500/10'
+                                : 'btn-classy-primary border-blue-600/10'
                             }`}
                           >
                             <Play size={12} fill="currentColor" /> Audit Catalog

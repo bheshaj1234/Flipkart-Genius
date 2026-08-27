@@ -7,8 +7,54 @@
 
 /* Custom Global Styling */
 body {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+/* 21.dev inspired Dot Grid background utility */
+.dot-grid {
+  background-image: radial-gradient(rgba(15, 23, 42, 0.06) 1.5px, transparent 0);
+  background-size: 20px 20px;
+}
+html.dark .dot-grid {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1.5px, transparent 0);
+}
+
+/* Premium Neo-Brutalist Classy buttons */
+.btn-classy {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-radius: 12px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+html.light .btn-classy-primary {
+  background-color: #2874f0;
+  color: #ffffff;
+  border: 1px solid #1c5fc9;
+}
+html.light .btn-classy-primary:hover {
+  background-color: #1260e2;
+  box-shadow: 0 4px 12px rgba(40, 116, 240, 0.25);
+  transform: translateY(-1px);
+}
+html.dark .btn-classy-primary {
+  background-color: #1e293b;
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+html.dark .btn-classy-primary:hover {
+  background-color: #334155;
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.15);
+  transform: translateY(-1px);
+}
+
 
 /* Custom Scrollbar styling */
 ::-webkit-scrollbar {

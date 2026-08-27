@@ -15,7 +15,7 @@ export default function Landing({ theme, toggleTheme }) {
   };
 
   return (
-    <div className={`min-h-screen font-sans transition-colors duration-500 flex flex-col justify-between relative overflow-hidden ${
+    <div className={`min-h-screen font-sans transition-colors duration-500 flex flex-col justify-between relative overflow-hidden dot-grid ${
       theme === 'dark' 
         ? 'bg-black text-slate-100' 
         : 'bg-slate-50 text-slate-800'
@@ -94,7 +94,7 @@ export default function Landing({ theme, toggleTheme }) {
                 </Link>
                 <Link
                   to="/register"
-                  className="inline-flex items-center justify-center px-4 py-2 border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 font-bold uppercase tracking-wider rounded-xl text-xs transition-all active:scale-[0.98]"
+                  className="inline-flex items-center justify-center px-4 py-2 border transition-all active:scale-[0.98] btn-classy btn-classy-primary"
                 >
                   Register
                 </Link>
@@ -185,7 +185,7 @@ export default function Landing({ theme, toggleTheme }) {
           {isLoggedIn ? (
             <Link
               to="/dashboard"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-10 py-4 bg-[#2874f0] hover:bg-[#1260e2] text-white font-black uppercase tracking-wider text-xs border border-blue-500/20 rounded-xl transition-all active:scale-[0.98]"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-10 py-4 btn-classy btn-classy-primary text-xs"
             >
               Go to Dashboard <ArrowRight size={14} className="ml-1" />
             </Link>
@@ -193,16 +193,16 @@ export default function Landing({ theme, toggleTheme }) {
             <>
               <Link
                 to="/register"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#2874f0] hover:bg-[#1260e2] text-white font-black uppercase tracking-wider text-xs border border-blue-500/20 rounded-xl transition-all active:scale-[0.98]"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 btn-classy btn-classy-primary text-xs"
               >
                 Register Store <ArrowRight size={14} className="ml-1" />
               </Link>
               <Link
                 to="/login"
-                className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 font-black uppercase tracking-wider text-xs border rounded-xl transition-all active:scale-[0.98] ${
+                className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-xs border rounded-xl transition-all active:scale-[0.98] btn-classy ${
                   theme === 'dark' 
-                    ? 'bg-slate-950/60 border-slate-800 hover:bg-slate-900 text-slate-300' 
-                    : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700 shadow-sm'
+                    ? 'bg-slate-950/60 border-slate-800 hover:bg-slate-900 text-slate-350 hover:text-white' 
+                    : 'bg-white border-slate-205 hover:bg-slate-50 text-slate-700 shadow-sm'
                 }`}
               >
                 Seller Sign In

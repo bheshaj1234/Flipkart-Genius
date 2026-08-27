@@ -105,29 +105,35 @@ export default function Landing({ theme, toggleTheme }) {
       </header>
 
       {/* Hero Section */}
-      <section className="relative pt-16 pb-20 px-6 max-w-7xl mx-auto flex flex-col items-center text-center z-10">
+      <section className="relative pt-20 pb-24 px-6 max-w-7xl mx-auto flex flex-col items-center text-center z-10">
         
-        {/* Cyberpunk Chrome Logo styling */}
-        <div className="relative inline-block mb-3">
-          <h1 className={`text-5xl sm:text-8xl font-black font-sans tracking-widest uppercase select-none ${
-            theme === 'dark'
-              ? 'text-transparent bg-clip-text bg-gradient-to-r from-[#2874f0] to-sky-400'
-              : 'text-slate-900'
-          }`}>
-            GENIUS
-          </h1>
-          <span className="absolute right-[-24px] top-[-8px] text-[10px] font-sans text-blue-500 font-black border border-blue-500/40 px-1 py-0.5 rounded">
-            v1.0
+        {/* Pulsing, animated fade-slide-in badge */}
+        <div className="mb-6 inline-flex items-center gap-3 rounded-full bg-[#2874f0]/10 dark:bg-blue-500/10 px-2.5 py-2 ring-1 ring-blue-500/20 backdrop-blur animate-fade-slide-in-1">
+          <span className="inline-flex items-center text-[10px] font-extrabold text-white bg-[#2874f0] rounded-full py-0.5 px-2.5 font-mono uppercase tracking-wider">
+            v1.1 RELEASE
+          </span>
+          <span className="text-xs font-semibold text-[#2874f0] dark:text-blue-400 font-sans">
+            AI Dynamic Pricing Engine & Gemini 1.5 Flash Vision
           </span>
         </div>
 
+        {/* Space-age title banner */}
+        <h1 className="sm:text-5xl md:text-6xl lg:text-7xl leading-tight text-4xl font-extrabold tracking-tight animate-fade-slide-in-2 font-sans max-w-4xl">
+          <span className={theme === 'dark' ? 'text-white' : 'text-slate-900'}>Enrich Your Catalog</span>
+          <br className="hidden sm:block" />
+          <span className="bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-500 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">Into the Future</span>
+        </h1>
+
         {/* Prompt Slogan */}
-        <div className="text-xs font-semibold text-blue-500 uppercase tracking-widest font-sans mb-8 opacity-90">
-          PROMPT THE CATALOG FUTURE
-        </div>
+        <p className={`sm:text-lg animate-fade-slide-in-3 text-base max-w-2xl mt-6 mx-auto ${
+          theme === 'dark' ? 'text-slate-400' : 'text-slate-600'
+        }`}>
+          India's first MERN-stack seller dashboard that automates bulk inventory ingestion.
+          Extract image attributes via Multimodal Vision, auto-generate SEO copy, and optimize pricing in real-time.
+        </p>
 
         {/* User Badges Group & Live Stats */}
-        <div className="flex flex-col items-center gap-3.5 mb-8">
+        <div className="flex flex-col items-center gap-3.5 mt-8 animate-fade-slide-in-3">
           <div className="flex -space-x-2">
             <img className="w-8 h-8 rounded-full border-2 border-black object-cover" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Seller 1" />
             <img className="w-8 h-8 rounded-full border-2 border-black object-cover" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80" alt="Seller 2" />
@@ -135,9 +141,8 @@ export default function Landing({ theme, toggleTheme }) {
             <img className="w-8 h-8 rounded-full border-2 border-black object-cover" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80" alt="Seller 4" />
           </div>
           <div className={`text-[11px] font-mono ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-            Views : <strong className={theme === 'dark' ? 'text-white' : 'text-slate-900'}>8,98,012</strong> | Registrations : <strong className={theme === 'dark' ? 'text-white' : 'text-slate-900'}>1,65,730</strong>
+            Catalog Views: <strong className={theme === 'dark' ? 'text-white' : 'text-slate-900'}>8,98,012</strong> | Enriched Drafts: <strong className={theme === 'dark' ? 'text-white' : 'text-slate-900'}>1,65,730</strong>
           </div>
-
           {/* Glowing Status Badge */}
           <div className={`inline-flex items-center gap-2 px-3.5 py-1 rounded-full border text-[10px] font-mono font-bold tracking-wider uppercase shadow-sm mt-1 ${
             theme === 'dark' 
@@ -149,24 +154,8 @@ export default function Landing({ theme, toggleTheme }) {
           </div>
         </div>
 
-        {/* Title Banner */}
-        <div className="space-y-4 max-w-4xl">
-          <div className={`text-xs font-extrabold tracking-[0.2em] uppercase ${
-            theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
-          }`}>
-            INDIA'S FIRST REAL-TIME
-          </div>
-          <h2 className={`text-3xl sm:text-6xl font-bold font-sans tracking-tight leading-tight uppercase ${
-            theme === 'dark' 
-              ? 'text-white' 
-              : 'text-slate-900'
-          }`}>
-            AI Catalog Enrichment
-          </h2>
-        </div>
-
         {/* Queue Configs Grid */}
-        <div className={`flex items-center gap-8 justify-center border-y py-5 my-10 font-mono text-xs w-full max-w-md ${
+        <div className={`flex items-center gap-8 justify-center border-y py-5 my-10 font-mono text-xs w-full max-w-md animate-fade-slide-in-4 ${
           theme === 'dark' ? 'border-slate-900' : 'border-slate-200'
         }`}>
           <div className="text-left">
@@ -181,7 +170,7 @@ export default function Landing({ theme, toggleTheme }) {
         </div>
 
         {/* Action CTAs - Restored Side-by-Side buttons! */}
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto animate-fade-slide-in-4">
           {isLoggedIn ? (
             <Link
               to="/dashboard"
@@ -193,7 +182,7 @@ export default function Landing({ theme, toggleTheme }) {
             <>
               <Link
                 to="/register"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 btn-classy btn-classy-primary text-xs"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 btn-classy btn-classy-primary text-xs animate-pulse-slow"
               >
                 Register Store <ArrowRight size={14} className="ml-1" />
               </Link>

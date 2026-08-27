@@ -1,0 +1,98 @@
+========================================================================
+             FLIPKART-GENIUS: AI-POWERED CATALOG ENRICHMENT PLATFORM
+========================================================================
+
+Flipkart-Genius is an advanced, enterprise-grade MERN-stack seller dashboard 
+designed to automate and streamline the process of product catalog uploads. 
+It replaces slow, manual data entry with an asynchronous processing pipeline 
+powered by Redis, BullMQ, and Google Gemini Pro/Flash GenAI services.
+
+Below is a detailed breakdown of the project architecture, tech stack, and 
+all implemented features.
+
+------------------------------------------------------------------------
+1. PROBLEM SOLVED & KEY VALUE PROPOSITION
+------------------------------------------------------------------------
+* Scattered Workflows: Sellers usually jump between multiple platforms for image 
+  attribute tagging, copywriting, and price calculation. Flipkart-Genius consolidates
+  these into a single grid-style dashboard.
+* Slow Ingestion: Uploading thousands of inventory items at once crashes standard 
+  web servers. Flipkart-Genius offloads parsing and API calling tasks to backend 
+  workers, returning instant success status to the user.
+* Low Copied Quality: Auto-generated product details on e-commerce sites often fail 
+  search engine indexing. Flipkart-Genius generates high-relevance SEO tags, titles, 
+  and descriptions.
+
+------------------------------------------------------------------------
+2. TECHNICAL ARCHITECTURE & SYSTEMS STACK
+------------------------------------------------------------------------
+* FRONTEND: React (Vite), TailwindCSS, AG-Grid (Enterprise-style spreadsheet), 
+  Socket.io-client, Axios, Lucide Icons.
+* BACKEND: Node.js, Express, MongoDB (Mongoose ORM), Redis, BullMQ, Socket.io, 
+  Multer, Sharp (Image compression).
+* AI PARTNER: Google Generative AI (Gemini Pro & Gemini 1.5 Flash SDKs).
+* ASYNC PIPELINE:
+  1. User uploads a CSV file containing hundreds of product rows.
+  2. The Express server validates the file, creates draft products with a "pending" 
+     status in MongoDB, and pushes jobs to a BullMQ Redis-backed queue.
+  3. A dedicated Background Worker pulls tasks from Redis, calls Gemini AI to 
+     enrich listing metadata in parallel, and saves final updates to MongoDB.
+  4. Real-time logging terminals (Socket.io) stream progress alerts directly to 
+     the user interface.
+
+------------------------------------------------------------------------
+3. FEATURES DEEP DIVE
+------------------------------------------------------------------------
+
+[FEATURE 1] GENAI CATALOG ENRICHMENT (Gemini AI integration)
+  * As the CSV processes, Gemini automatically compiles high-quality product titles, 
+    search keywords, and 4-point bulleted highlights optimized for search engines.
+  * Adjusts the creative tone dynamically based on product categories (e.g., professional 
+    descriptions for electronics, vibrant summaries for apparel).
+
+[FEATURE 2] MULTIMODAL VISION ATTRIBUTE EXTRACTOR (Sharp + Gemini Vision)
+  * When a product is uploaded with an image, the backend worker compresses the image 
+    via Sharp and passes it to Gemini 1.5 Flash Vision.
+  * The vision model automatically extracts visual descriptors (Color, Pattern, Material) 
+    directly from the picture, auto-filling attributes like "Dark Blue", "Solid", or 
+    "Polyester" without manual seller input.
+
+[FEATURE 3] 0.6 CONFIDENCE GUARDRAIL (AI Safety & Compliance)
+  * If the GenAI confidence score for category matching or copy quality drops below 60% 
+    (0.6), the listing is automatically flagged as "Needs Review".
+  * These flagged listings are safely held back in a draft status so the seller can inspect, 
+    edit, and approve them before they go live on Flipkart.
+
+[FEATURE 4] SPREADSHEET-STYLE AUDITING (AG Grid dashboard)
+  * The dashboard integrates AG Grid, allowing sellers to review, sort, filter, and 
+    modify entire catalog batches inside a premium Excel-style table.
+  * Supports real-time cell editing, bulk deletions, and inline audit status visual alerts.
+
+[FEATURE 5] LIVE PROGRESS LOGGING TERMINAL (Socket.io & BullMQ)
+  * A retro-styled terminal widget on the upload page connects to the backend via 
+    WebSockets.
+  * As backend workers process products, status events ("Parsing row 3", "Gemini vision 
+    completed for item 5") stream live to the seller's browser screen, avoiding blank 
+    loading spinner pages.
+
+[FEATURE 6] AI DYNAMIC PRICING ENGINE
+  * Provides premium pricing management inside the product audit panel:
+    - Match / Undercut Competitor: Automatically scans and targets competitor prices, 
+      undercutting them by exactly ₹15 to win the search placements.
+    - Safety Floor Guardrails: Allows sellers to set absolute Min Price (Floor) boundaries, 
+      guaranteeing the pricing engine never scales down to a loss-making rate.
+    - Festival Season Overrides: Detects holiday periods and applies scaling factors (e.g., 
+      automatically downscales apparel by 12% to run promos, while upscaling electronics 
+      by 8% to maximize holiday margins).
+    - Emulates pricing calculations locally for mock demo products to prevent database crashes.
+
+[FEATURE 7] AI SYSTEM INTEGRITY MONITOR
+  * Displays a live diagnostic panel on the dashboard checking active service layers 
+    (MongoDB Atlas Cluster, Upstash Redis Caching client, Gemini API connectivity, 
+    and BullMQ Background Worker threads).
+  * Automatically handles secure SSL/TLS protocols to connect safely from cloud platforms 
+    like Render to Upstash Redis.
+
+========================================================================
+Developed with 💙 by Flipkart-Genius Team
+========================================================================

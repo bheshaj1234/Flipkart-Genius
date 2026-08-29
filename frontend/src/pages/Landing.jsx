@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ShoppingBag, ArrowRight, Sparkles, Image, CheckCircle, Database, Layers, ShieldAlert, Cpu, Sun, Moon } from 'lucide-react';
 import FlipkartLogo from '../components/FlipkartLogo';
+import { SparklesCore } from '../components/ui/sparkles';
 
 export default function Landing({ theme, toggleTheme }) {
   const navigate = useNavigate();
@@ -133,11 +134,37 @@ export default function Landing({ theme, toggleTheme }) {
         </div>
 
         {/* Space-age title banner */}
-        <h1 className="sm:text-5xl md:text-6xl lg:text-7xl leading-tight text-4xl font-extrabold tracking-tight animate-fade-slide-in-2 font-sans max-w-4xl">
-          <span className={theme === 'dark' ? 'text-white' : 'text-slate-900'}>Enrich Your Catalog</span>
-          <br className="hidden sm:block" />
-          <span className="bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-500 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">Into the Future</span>
-        </h1>
+        <div className="relative w-full max-w-4xl flex flex-col items-center justify-center">
+          <h1 className="sm:text-5xl md:text-6xl lg:text-7xl leading-tight text-4xl font-extrabold tracking-tight animate-fade-slide-in-2 font-sans relative z-20">
+            <span className={theme === 'dark' ? 'text-white' : 'text-slate-900'}>Enrich Your Catalog</span>
+            <br className="hidden sm:block" />
+            <span className="bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-500 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">Into the Future</span>
+          </h1>
+
+          {/* Sparkles Canvas Panel */}
+          <div className="w-[40rem] max-w-full h-24 relative -mt-4 z-10 overflow-hidden">
+            {/* Gradients */}
+            <div className="absolute inset-x-20 top-0 bg-gradient-to-r from-transparent via-blue-500 to-transparent h-[2px] w-3/4 blur-sm" />
+            <div className="absolute inset-x-20 top-0 bg-gradient-to-r from-transparent via-blue-500 to-transparent h-px w-3/4" />
+            <div className="absolute inset-x-60 top-0 bg-gradient-to-r from-transparent via-sky-500 to-transparent h-[5px] w-1/4 blur-sm" />
+            <div className="absolute inset-x-60 top-0 bg-gradient-to-r from-transparent via-sky-500 to-transparent h-px w-1/4" />
+
+            {/* Sparkles Core */}
+            <SparklesCore
+              background="transparent"
+              minSize={0.4}
+              maxSize={1.2}
+              particleDensity={800}
+              className="w-full h-full"
+              particleColor={theme === 'dark' ? '#FFFFFF' : '#2874F0'}
+            />
+
+            {/* Radial Gradient mask */}
+            <div className={`absolute inset-0 w-full h-full [mask-image:radial-gradient(350px_200px_at_top,transparent_20%,white)] ${
+              theme === 'dark' ? 'bg-black' : 'bg-slate-50'
+            }`}></div>
+          </div>
+        </div>
 
         {/* Prompt Slogan */}
         <p className={`sm:text-lg animate-fade-slide-in-3 text-base max-w-2xl mt-6 mx-auto ${

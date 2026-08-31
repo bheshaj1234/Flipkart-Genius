@@ -1,106 +1,125 @@
 import fs from 'fs';
+import path from 'path';
 import Papa from 'papaparse';
+import XLSX from 'xlsx';
 import UploadBatch from '../models/UploadBatch.js';
 import Product from '../models/Product.js';
 import { addBatchJobs } from '../queues/uploadQueue.js'; 
 import { optimizeProductWithCopilot, classifyCategory, verifyImageContent, extractImageAttributes } from '../services/aiService.js';
 
-// @desc    Upload inventory CSV and enqueue background enrichment jobs
+// Helper function to extract rows from CSV or Excel file
+const parseSpreadsheetRows = (filePath, originalName) => {
+  const fileExt = path.extname(originalName).toLowerCase();
+  
+  if (fileExt === '.xlsx' || fileExt === '.xls') {
+    const workbook = XLSX.readFile(filePath);
+    const sheetName = workbook.SheetNames[0];
+    if (!sheetName) return [];
+    const worksheet = workbook.Sheets[sheetName];
+    return XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+  } else {
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+    const parsed = Papa.parse(fileContent, {
+      header: true,
+      skipEmptyLines: 'greedy'
+    });
+    return parsed.data || [];
+  }
+};
+
+// @desc    Upload inventory CSV or Excel and enqueue background enrichment jobs
 // @route   POST /api/batches/upload
 // @access  Private
 export const uploadBatch = async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ success: false, message: 'Please upload a CSV file' });
+      return res.status(400).json({ success: false, message: 'Please upload a CSV or Excel file (.csv, .xlsx, .xls)' });
     }
 
     const filePath = req.file.path;
-    const fileContent = fs.readFileSync(filePath, 'utf8');
+    let rows = [];
 
-    // Parse CSV rows on backend
-    Papa.parse(fileContent, {
-      header: true,
-      skipEmptyLines: 'greedy',
-      complete: async (results) => {
-        const rows = results.data;
-        if (rows.length === 0) {
-          fs.unlinkSync(filePath); // delete temp file
-          return res.status(400).json({ success: false, message: 'Uploaded CSV file contains no rows' });
-        }
+    try {
+      rows = parseSpreadsheetRows(filePath, req.file.originalname);
+    } catch (parseError) {
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      return res.status(400).json({ success: false, message: `Failed to parse spreadsheet file: ${parseError.message}` });
+    }
 
-        // Create UploadBatch record
-        const batch = await UploadBatch.create({
-          sellerId: req.user._id,
-          fileName: req.file.originalname,
-          totalRows: rows.length,
-          status: 'processing'
-        });
+    if (!rows || rows.length === 0) {
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      return res.status(400).json({ success: false, message: 'Uploaded spreadsheet file contains no rows' });
+    }
 
-        // Initialize draft products in database (raw inputs first)
-        const productsToCreate = rows.map((row, index) => {
-          const title = row.title || row.Title;
-          const price = Number(row.price || row.Price);
-          const category = row.category || row.Category;
-          const imageUrls = row.imageUrls || row.image_urls || row.image || row.Image;
-          
-          const color = row.color || row.Color || '';
-          const pattern = row.pattern || row.Pattern || '';
-          const material = row.material || row.Material || '';
+    // Create UploadBatch record
+    const batch = await UploadBatch.create({
+      sellerId: req.user._id,
+      fileName: req.file.originalname,
+      totalRows: rows.length,
+      status: 'processing'
+    });
 
-          return {
-            sellerId: req.user._id,
-            batchId: batch._id,
-            rawInput: {
-              title,
-              price: isNaN(price) ? 0 : price,
-              category,
-              imageUrls: imageUrls ? imageUrls.split(',').map(url => url.trim()).filter(Boolean) : [],
-              color,
-              pattern,
-              material
-            },
-            finalData: {
-              title: title || '',
-              price: isNaN(price) ? 0 : price,
-              category: category || '',
-              imageUrls: imageUrls ? imageUrls.split(',').map(url => url.trim()).filter(Boolean) : []
-            },
-            status: 'draft'
-          };
-        });
+    // Initialize draft products in database (raw inputs first)
+    const productsToCreate = rows.map((row) => {
+      const title = row.title || row.Title;
+      const price = Number(row.price || row.Price);
+      const category = row.category || row.Category;
+      const imageUrls = row.imageUrls || row.image_urls || row.image || row.Image;
+      
+      const color = row.color || row.Color || '';
+      const pattern = row.pattern || row.Pattern || '';
+      const material = row.material || row.Material || '';
 
-        const createdProducts = await Product.insertMany(productsToCreate);
+      return {
+        sellerId: req.user._id,
+        batchId: batch._id,
+        rawInput: {
+          title,
+          price: isNaN(price) ? 0 : price,
+          category,
+          imageUrls: imageUrls ? String(imageUrls).split(',').map(url => url.trim()).filter(Boolean) : [],
+          color,
+          pattern,
+          material
+        },
+        finalData: {
+          title: title || '',
+          price: isNaN(price) ? 0 : price,
+          category: category || '',
+          imageUrls: imageUrls ? String(imageUrls).split(',').map(url => url.trim()).filter(Boolean) : []
+        },
+        status: 'draft'
+      };
+    });
 
-        // Push jobs to BullMQ Redis Queue (Step 5)
-        try {
-          await addBatchJobs(batch._id, createdProducts);
-        } catch (queueErr) {
-          console.error('BullMQ Queue connection failure:', queueErr.message);
-          // If Redis isn't running, we fallback to processing mock-complete data so the sandbox still works
-          setTimeout(async () => {
-            batch.processedRows = batch.totalRows;
-            batch.status = 'needs_review';
-            await batch.save();
-          }, 3000);
-        }
+    const createdProducts = await Product.insertMany(productsToCreate);
 
-        // Delete temp uploaded file
-        fs.unlinkSync(filePath);
+    // Push jobs to BullMQ Redis Queue
+    try {
+      await addBatchJobs(batch._id, createdProducts);
+    } catch (queueErr) {
+      console.error('BullMQ Queue connection failure:', queueErr.message);
+      // Fallback timeout so sandbox stays active without Redis
+      setTimeout(async () => {
+        batch.processedRows = batch.totalRows;
+        batch.status = 'needs_review';
+        await batch.save();
+      }, 3000);
+    }
 
-        res.status(202).json({
-          success: true,
-          message: 'CSV uploaded and queued for AI enrichment successfully',
-          batch: {
-            id: batch._id,
-            fileName: batch.fileName,
-            totalRows: batch.totalRows,
-            status: batch.status
-          }
-        });
-      },
-      error: (err) => {
-        fs.unlinkSync(filePath);
-        res.status(500).json({ success: false, message: `Failed to parse CSV: ${err.message}` });
+    // Delete temp uploaded file
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    res.status(202).json({
+      success: true,
+      message: 'Spreadsheet uploaded and queued for AI enrichment successfully',
+      batch: {
+        id: batch._id,
+        fileName: batch.fileName,
+        totalRows: batch.totalRows,
+        status: batch.status
       }
     });
   } catch (error) {
@@ -500,5 +519,60 @@ export const updateProductPricing = async (req, res) => {
     }
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Convert uploaded Excel file (.xlsx, .xls) to CSV format
+// @route   POST /api/batches/convert-excel
+// @access  Private
+export const convertExcelToCsv = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Please upload an Excel file to convert' });
+    }
+
+    const filePath = req.file.path;
+    const fileExt = path.extname(req.file.originalname).toLowerCase();
+    let convertedCsv = '';
+    let rows = [];
+
+    if (fileExt === '.xlsx' || fileExt === '.xls') {
+      const workbook = XLSX.readFile(filePath);
+      const firstSheetName = workbook.SheetNames[0];
+      if (!firstSheetName) {
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        return res.status(400).json({ success: false, message: 'Excel file contains no worksheets' });
+      }
+      const worksheet = workbook.Sheets[firstSheetName];
+      convertedCsv = XLSX.utils.sheet_to_csv(worksheet);
+      rows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+    } else {
+      // If user uploaded a CSV, return as-is
+      convertedCsv = fs.readFileSync(filePath, 'utf8');
+      const parsed = Papa.parse(convertedCsv, { header: true, skipEmptyLines: 'greedy' });
+      rows = parsed.data || [];
+    }
+
+    // Clean up temp upload file
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    res.status(200).json({
+      success: true,
+      fileName: req.file.originalname,
+      fileType: fileExt,
+      totalRows: rows.length,
+      convertedCsv,
+      rows
+    });
+  } catch (error) {
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error during Excel conversion'
+    });
   }
 };

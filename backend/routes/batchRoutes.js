@@ -14,7 +14,8 @@ import {
   deleteBatch,
   addSingleProduct,
   copilotOptimizeProduct,
-  updateProductPricing
+  updateProductPricing,
+  convertExcelToCsv
 } from '../controllers/batchController.js';
 
 // Multer Storage Configuration
@@ -28,16 +29,22 @@ const storage = multer.diskStorage({
   }
 });
 
-// Multer file filter (accept only CSV)
+// Multer file filter (accept CSV and Excel files)
 const fileFilter = (req, file, cb) => {
-  const filetypes = /csv/;
-  const mimetype = file.mimetype === 'text/csv' || file.mimetype === 'application/vnd.ms-excel';
+  const filetypes = /csv|xlsx|xls/;
   const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+  const allowedMimeTypes = [
+    'text/csv',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/octet-stream'
+  ];
+  const mimetype = allowedMimeTypes.includes(file.mimetype);
 
-  if (mimetype && extname) {
+  if (mimetype || extname) {
     return cb(null, true);
   } else {
-    cb(new Error('Please upload a valid CSV file (.csv)'));
+    cb(new Error('Please upload a valid CSV or Excel file (.csv, .xlsx, .xls)'));
   }
 };
 
@@ -54,6 +61,7 @@ router.use(protect);
 
 router.get('/', getBatches);
 router.post('/upload', upload.single('file'), uploadBatch);
+router.post('/convert-excel', upload.single('file'), convertExcelToCsv);
 router.get('/:id/status', getBatchStatus);
 router.delete('/:id', deleteBatch);
 router.get('/:id/products', getBatchProducts);

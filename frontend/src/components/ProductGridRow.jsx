@@ -185,7 +185,10 @@ export default function ProductGridRow({ product, onClose, onSave }) {
     }
   };
 
-  const handleSave = () => {
+  const [isSavingAudit, setIsSavingAudit] = useState(false);
+
+  const handleSave = async () => {
+    setIsSavingAudit(true);
     const updatedProduct = {
       ...product,
       finalData: {
@@ -198,6 +201,18 @@ export default function ProductGridRow({ product, onClose, onSave }) {
         attributes: editedAttributes
       }
     };
+
+    if (!product._id.startsWith('mock_') && !product._id.startsWith('prod_')) {
+      try {
+        await API.put(`/batches/products/${product._id}`, {
+          finalData: updatedProduct.finalData
+        });
+      } catch (err) {
+        console.error('Failed to save product audit changes to DB:', err);
+      }
+    }
+
+    setIsSavingAudit(false);
     onSave(updatedProduct);
   };
 
@@ -519,19 +534,27 @@ export default function ProductGridRow({ product, onClose, onSave }) {
 
                 {/* AI Dynamic Pricing Engine Settings */}
                 <div className="bg-gradient-to-br from-indigo-50/80 to-blue-50/40 border border-indigo-100 p-5 rounded-2xl space-y-4">
-                  <div className="flex justify-between items-center">
+                  <div 
+                    onClick={() => setPricingEnabled(!pricingEnabled)}
+                    className="flex justify-between items-center cursor-pointer select-none"
+                  >
                     <span className="text-xs font-black text-indigo-950 flex items-center gap-1.5 uppercase tracking-wide">
                       ⚡ AI Dynamic Pricing Engine
                     </span>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        checked={pricingEnabled}
-                        onChange={(e) => setPricingEnabled(e.target.checked)}
-                        className="sr-only peer"
-                      />
-                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                    </label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-indigo-600 uppercase">
+                        {pricingEnabled ? 'Active' : 'Disabled'}
+                      </span>
+                      <div className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={pricingEnabled}
+                          onChange={(e) => setPricingEnabled(e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      </div>
+                    </div>
                   </div>
 
                   {pricingEnabled && (
@@ -623,6 +646,25 @@ export default function ProductGridRow({ product, onClose, onSave }) {
                     <span className="text-[10px] text-blue-600 bg-blue-100/50 px-2 py-0.5 rounded font-mono font-bold">
                       Interactive
                     </span>
+                  </div>
+
+                  {/* Quick suggested prompt chips */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      '✨ Make it Luxurious',
+                      '🇮🇳 Translate to Hindi',
+                      '⚡ SEO High Converting',
+                      '📝 Short Bullet Description'
+                    ].map((suggestion, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setCopilotPrompt(suggestion.replace(/^[\u2000-\u3300\ud83c-\udfff]\s*/, ''))}
+                        className="text-[10px] font-medium bg-white hover:bg-blue-50 text-blue-700 border border-blue-200/60 px-2.5 py-1 rounded-full transition-colors cursor-pointer"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
                   </div>
                   
                   <div className="flex items-center gap-2">

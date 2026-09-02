@@ -339,8 +339,12 @@ export default function Dashboard({ theme }) {
                             <Play size={12} fill="currentColor" /> Audit Catalog
                           </Link>
                           <button
-                            onClick={() => handleDeleteBatch(batch._id)}
-                            className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/10 transition-colors"
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteBatch(batch._id);
+                            }}
+                            className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/10 transition-colors cursor-pointer"
                             title="Delete import history"
                           >
                             <Trash2 size={14} />

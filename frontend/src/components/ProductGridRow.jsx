@@ -24,8 +24,52 @@ export default function ProductGridRow({ product, onClose, onSave }) {
   const [maxPrice, setMaxPrice] = useState(product.dynamicPricing?.maxPrice ? String(product.dynamicPricing.maxPrice) : '');
   const [pricingStrategy, setPricingStrategy] = useState(product.dynamicPricing?.pricingStrategy || 'match_lowest');
   const [festivalMode, setFestivalMode] = useState(product.dynamicPricing?.festivalMode || false);
-  const [competitorPrice, setCompetitorPrice] = useState(product.dynamicPricing?.competitorPrice || 0);
+  const getInitialCompetitorPrice = () => {
+    if (product.dynamicPricing?.competitorPrice > 0) {
+      return product.dynamicPricing.competitorPrice;
+    }
+    const currentP = Number(editedPrice || product.finalData.price || product.rawInput.price || 1499);
+    const titleLower = (product.finalData.title || product.rawInput.title || '').toLowerCase();
+    
+    if (titleLower.includes('asus') || titleLower.includes('laptop')) return 48500;
+    if (titleLower.includes('headphone') || titleLower.includes('audio')) return 4899;
+    if (titleLower.includes('chair')) return 8499;
+    if (titleLower.includes('watch')) return 3299;
+    if (titleLower.includes('kurta') || titleLower.includes('shirt')) return 1199;
+    if (titleLower.includes('mouse')) return 1449;
+    
+    return Math.max(100, Math.round(currentP * 0.96));
+  };
+
+  const [competitorPrice, setCompetitorPrice] = useState(
+    product.dynamicPricing?.competitorPrice > 0 
+      ? product.dynamicPricing.competitorPrice 
+      : getInitialCompetitorPrice()
+  );
   const [isPricingSaving, setIsPricingSaving] = useState(false);
+
+  const calculateAIRecommendation = () => {
+    const compP = competitorPrice > 0 ? competitorPrice : getInitialCompetitorPrice();
+    let rec = compP - 15;
+    if (pricingStrategy === 'demand_surge') rec = Math.round(compP * 1.1);
+    if (pricingStrategy === 'maximize_margin') rec = Math.round(compP * 1.15);
+    
+    if (festivalMode) {
+      const titleLower = (product.finalData.title || '').toLowerCase();
+      if (titleLower.includes('kurta') || titleLower.includes('apparel') || titleLower.includes('shirt')) {
+        rec = Math.round(rec * 0.88);
+      } else {
+        rec = Math.round(rec * 1.08);
+      }
+    }
+
+    const floor = minPrice !== '' ? Number(minPrice) : 0;
+    const ceiling = maxPrice !== '' ? Number(maxPrice) : 0;
+    if (floor > 0) rec = Math.max(rec, floor);
+    if (ceiling > 0) rec = Math.min(rec, ceiling);
+
+    return rec;
+  };
 
   const handlePricingSave = async (e) => {
     e.preventDefault();
@@ -563,18 +607,18 @@ export default function ProductGridRow({ product, onClose, onSave }) {
                     <div className="space-y-3.5 border-t border-indigo-100/60 pt-3 transition-all duration-300">
                       
                       {/* Price Analytics Display */}
-                      <div className="grid grid-cols-3 gap-3 bg-white/70 backdrop-blur-sm border border-indigo-100/40 p-3 rounded-xl">
-                        <div className="text-center border-r border-slate-100">
-                          <span className="text-[9px] font-bold text-slate-400 block uppercase">Current Price</span>
-                          <span className="text-xs font-extrabold text-slate-700">₹{editedPrice}</span>
+                      <div className="grid grid-cols-3 gap-3 bg-white border border-indigo-200/80 p-3.5 rounded-xl shadow-sm">
+                        <div className="text-center border-r border-slate-200 pr-2">
+                          <span className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider mb-1">Current Price</span>
+                          <span className="text-base font-black text-slate-900 drop-shadow-xs">₹{editedPrice || product.finalData.price || 0}</span>
                         </div>
-                        <div className="text-center border-r border-slate-100">
-                          <span className="text-[9px] font-bold text-slate-400 block uppercase">Competitor</span>
-                          <span className="text-xs font-extrabold text-amber-600">₹{competitorPrice || 'Calculating...'}</span>
+                        <div className="text-center border-r border-slate-200 pr-2">
+                          <span className="text-[10px] font-extrabold text-amber-700 block uppercase tracking-wider mb-1">Competitor</span>
+                          <span className="text-base font-black text-amber-600">₹{competitorPrice > 0 ? competitorPrice : getInitialCompetitorPrice()}</span>
                         </div>
                         <div className="text-center">
-                          <span className="text-[9px] font-bold text-indigo-600 block uppercase">AI Recommendation</span>
-                          <span className="text-xs font-black text-indigo-600">₹{competitorPrice ? (pricingStrategy === 'match_lowest' ? competitorPrice - 15 : pricingStrategy === 'demand_surge' ? Math.round(competitorPrice * 1.1) : Math.round(competitorPrice * 1.15)) : editedPrice}</span>
+                          <span className="text-[10px] font-extrabold text-indigo-700 block uppercase tracking-wider mb-1">AI Recommendation</span>
+                          <span className="text-base font-black text-indigo-600">₹{calculateAIRecommendation()}</span>
                         </div>
                       </div>
 

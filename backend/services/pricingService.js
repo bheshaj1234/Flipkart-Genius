@@ -6,29 +6,30 @@ import Product from '../models/Product.js';
 export const getCompetitorPrice = (title, originalPrice) => {
   const titleLower = title.toLowerCase();
   
-  // Simulated competitor listings intelligence
   if (titleLower.includes('asus') && titleLower.includes('expertbook')) {
     return 48500;
   }
-  if (titleLower.includes('nike') && titleLower.includes('shoe')) {
-    return 4200;
+  if (titleLower.includes('headphone') || titleLower.includes('earphone')) {
+    return 4899;
   }
   if (titleLower.includes('kurta')) {
-    return 650;
+    return 1199;
   }
   if (titleLower.includes('mouse')) {
-    return 299;
+    return 1449;
   }
   if (titleLower.includes('keyboard')) {
-    return 799;
+    return 2849;
   }
-  if (titleLower.includes('headphone') || titleLower.includes('earphone')) {
-    return 1299;
+  if (titleLower.includes('watch')) {
+    return 3299;
+  }
+  if (titleLower.includes('chair')) {
+    return 8499;
   }
   
-  // Dynamic random baseline around original listing price if no keyword matches
-  const factor = 0.88 + (Math.sin(title.length) * 0.08); // deterministic mock multiplier
-  return Math.round(originalPrice * factor);
+  const base = Number(originalPrice) || 1000;
+  return Math.max(100, Math.round(base * 0.96));
 };
 
 /**

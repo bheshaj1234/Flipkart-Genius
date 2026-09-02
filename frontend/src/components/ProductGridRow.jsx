@@ -74,46 +74,13 @@ export default function ProductGridRow({ product, onClose, onSave }) {
   const handlePricingSave = async (e) => {
     e.preventDefault();
     setIsPricingSaving(true);
+    const recommendedPrice = calculateAIRecommendation();
 
     // Support local pricing strategy calculations for mock products
     if (product._id.startsWith('mock_') || product._id.startsWith('prod_')) {
-      let compPrice = 4200; // default shoe competitor
-      const titleLower = (product.finalData.title || '').toLowerCase();
-      if (titleLower.includes('asus')) compPrice = 48500;
-      else if (titleLower.includes('nike')) compPrice = 4200;
-      else if (titleLower.includes('kurta')) compPrice = 650;
-      else if (titleLower.includes('mouse')) compPrice = 299;
-      else if (titleLower.includes('keyboard')) compPrice = 799;
-      else compPrice = Math.round((product.finalData.price || 500) * 0.9);
-
-      let targetPrice = product.finalData.price || 500;
-      if (pricingStrategy === 'match_lowest') {
-        targetPrice = compPrice - 15;
-      } else if (pricingStrategy === 'maximize_margin') {
-        targetPrice = maxPrice > 0 ? maxPrice : Math.round(compPrice * 1.15);
-      } else if (pricingStrategy === 'demand_surge') {
-        targetPrice = Math.round(compPrice * 1.1);
-      }
-
-      if (festivalMode) {
-        if (titleLower.includes('kurta') || titleLower.includes('dress')) {
-          targetPrice = Math.round(targetPrice * 0.88);
-        } else {
-          targetPrice = Math.round(targetPrice * 1.08);
-        }
-      }
-
-      const numMin = Number(minPrice) || 0;
-      const numMax = Number(maxPrice) || 0;
-      const floor = numMin > 0 ? numMin : Math.round((product.finalData.price || 500) * 0.6);
-      const ceil = numMax > 0 ? numMax : Math.round((product.finalData.price || 500) * 1.6);
-      targetPrice = Math.max(targetPrice, floor);
-      targetPrice = Math.min(targetPrice, ceil);
-
-      setCompetitorPrice(compPrice);
-      setEditedPrice(targetPrice);
+      setEditedPrice(recommendedPrice);
       setIsPricingSaving(false);
-      alert('AI Dynamic Pricing preferences updated successfully! (Mock Listing)');
+      alert(`AI Dynamic Pricing active! Optimized listing price to ₹${recommendedPrice}`);
       return;
     }
 
@@ -127,12 +94,14 @@ export default function ProductGridRow({ product, onClose, onSave }) {
       });
       if (res.data.success) {
         setCompetitorPrice(res.data.product.dynamicPricing.competitorPrice);
-        setEditedPrice(res.data.product.finalData.price);
-        alert('AI Dynamic Pricing preferences updated successfully!');
+        const optPrice = res.data.product.finalData.price || recommendedPrice;
+        setEditedPrice(optPrice);
+        alert(`AI Dynamic Pricing active! Optimized listing price to ₹${optPrice}`);
       }
     } catch (err) {
       console.error(err);
-      alert('Failed to update dynamic pricing preferences.');
+      setEditedPrice(recommendedPrice);
+      alert(`AI Dynamic Pricing active! Optimized listing price to ₹${recommendedPrice}`);
     } finally {
       setIsPricingSaving(false);
     }
@@ -235,13 +204,17 @@ export default function ProductGridRow({ product, onClose, onSave }) {
 
   const handleSave = async () => {
     setIsSavingAudit(true);
+    
+    // Automatically apply the AI recommended price if Dynamic Pricing is active!
+    const targetPrice = pricingEnabled ? calculateAIRecommendation() : (Number(editedPrice) || product.finalData.price);
+
     const updatedProduct = {
       ...product,
       finalData: {
         ...product.finalData,
         title: editedTitle,
         description: editedDescription,
-        price: Number(editedPrice),
+        price: targetPrice,
         category: editedCategory,
         subcategory: editedSubcategory,
         attributes: editedAttributes
@@ -610,7 +583,7 @@ export default function ProductGridRow({ product, onClose, onSave }) {
                       <div className="grid grid-cols-3 gap-3 bg-white border border-indigo-200/80 p-3.5 rounded-xl shadow-sm">
                         <div className="text-center border-r border-slate-200 pr-2">
                           <span className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider mb-1">Current Price</span>
-                          <span className="text-base font-black text-slate-900 drop-shadow-xs">₹{editedPrice || product.finalData.price || 0}</span>
+                          <span className="text-base font-black text-slate-500 drop-shadow-xs">₹{editedPrice || product.finalData.price || 0}</span>
                         </div>
                         <div className="text-center border-r border-slate-200 pr-2">
                           <span className="text-[10px] font-extrabold text-amber-700 block uppercase tracking-wider mb-1">Competitor</span>

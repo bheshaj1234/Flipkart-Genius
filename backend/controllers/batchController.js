@@ -576,3 +576,58 @@ export const convertExcelToCsv = async (req, res) => {
     });
   }
 };
+
+// @desc    Re-run Vision AI attribute extraction on demand
+// @route   POST /api/batches/products/:id/vision
+// @access  Private
+export const rerunProductVision = async (req, res) => {
+  try {
+    const product = await Product.findOne({ _id: req.params.id, sellerId: req.user._id });
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
+    const imageUrl = product.rawInput.imageUrls?.[0] || product.finalData.imageUrls?.[0];
+    if (!imageUrl) {
+      return res.status(400).json({ success: false, message: 'No image URL attached to this product' });
+    }
+
+    const title = product.finalData.title || product.rawInput.title || '';
+    
+    // Invalidate stale vision cache if present in Redis
+    try {
+      const redisModule = await import('../config/redis.js');
+      const redisClient = redisModule.default;
+      if (redisClient) {
+        const crypto = await import('crypto');
+        const hash = crypto.createHash('md5').update(`${imageUrl}:${title}`).digest('hex');
+        await redisClient.del(`cache:vision:${hash}`);
+      }
+    } catch (e) {
+      // Ignore redis cache clearance errors
+    }
+
+    const extracted = await extractImageAttributes(imageUrl, title);
+
+    if (!product.aiGenerated) product.aiGenerated = {};
+    product.aiGenerated.extractedAttributes = extracted;
+
+    product.finalData.attributes = {
+      ...product.finalData.attributes,
+      color: extracted.color || product.finalData.attributes?.color,
+      pattern: extracted.pattern || product.finalData.attributes?.pattern,
+      material: extracted.material || extracted.material_guess || product.finalData.attributes?.material
+    };
+
+    await product.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Vision AI re-extracted attributes successfully',
+      extractedAttributes: extracted,
+      product
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

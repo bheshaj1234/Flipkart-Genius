@@ -15,7 +15,8 @@ import {
   addSingleProduct,
   copilotOptimizeProduct,
   updateProductPricing,
-  convertExcelToCsv
+  convertExcelToCsv,
+  rerunProductVision
 } from '../controllers/batchController.js';
 
 // Multer Storage Configuration
@@ -73,5 +74,6 @@ router.post('/products/bulk-publish', bulkPublishProducts);
 router.post('/products/single', addSingleProduct);
 router.post('/products/:id/copilot', copilotOptimizeProduct);
 router.put('/products/:id/pricing', updateProductPricing);
+router.post('/products/:id/vision', rerunProductVision);
 
 export default router;

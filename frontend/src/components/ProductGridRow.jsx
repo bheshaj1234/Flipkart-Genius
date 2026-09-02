@@ -235,6 +235,56 @@ export default function ProductGridRow({ product, onClose, onSave }) {
     onSave(updatedProduct);
   };
 
+  const [isVisionLoading, setIsVisionLoading] = useState(false);
+
+  const handleRerunVision = async () => {
+    setIsVisionLoading(true);
+    
+    // Support local mock products
+    if (product._id.startsWith('mock_') || product._id.startsWith('prod_')) {
+      setTimeout(() => {
+        const titleLower = (product.finalData.title || product.rawInput?.title || '').toLowerCase();
+        let color = 'Yellow & Black';
+        let pattern = 'Matte Finish';
+        let material = 'Aluminum & Cushioned Leatherette';
+
+        if (titleLower.includes('mouse')) {
+          color = 'RGB Multi-color';
+          pattern = 'Ergonomic Solid';
+          material = 'ABS Plastic & Matte Rubber';
+        } else if (titleLower.includes('kurta')) {
+          color = 'Navy Blue';
+          pattern = 'Traditional Embroidered';
+          material = '100% Pure Organic Cotton';
+        } else if (titleLower.includes('watch')) {
+          color = 'Chestnut Brown';
+          pattern = 'Classic Chrono';
+          material = 'Stainless Steel & Leather Strap';
+        }
+
+        setEditedAttributes({ color, pattern, material });
+        setIsVisionLoading(false);
+      }, 500);
+      return;
+    }
+
+    try {
+      const res = await API.post(`/batches/products/${product._id}/vision`);
+      if (res.data.success && res.data.extractedAttributes) {
+        const ext = res.data.extractedAttributes;
+        setEditedAttributes({
+          color: ext.color || editedAttributes.color,
+          pattern: ext.pattern || editedAttributes.pattern,
+          material: ext.material || ext.material_guess || editedAttributes.material
+        });
+      }
+    } catch (err) {
+      console.error('Vision re-extraction failed:', err);
+    } finally {
+      setIsVisionLoading(false);
+    }
+  };
+
   const handleAttributeChange = (key, value) => {
     setEditedAttributes(prev => ({
       ...prev,
@@ -513,9 +563,15 @@ export default function ProductGridRow({ product, onClose, onSave }) {
                     <span className="text-xs font-bold text-slate-800 flex items-center gap-1">
                       AI Extracted Attributes (From Photo)
                     </span>
-                    <span className="text-[10px] text-slate-400 bg-white border border-slate-200/60 px-2 py-0.5 rounded">
-                      Vision API Match
-                    </span>
+                    <button
+                      type="button"
+                      onClick={handleRerunVision}
+                      disabled={isVisionLoading}
+                      className="text-[10px] font-bold text-indigo-600 bg-white hover:bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1 disabled:opacity-50"
+                    >
+                      <Sparkles size={11} className={isVisionLoading ? "animate-spin text-indigo-600" : "text-indigo-600"} />
+                      {isVisionLoading ? 'Extracting Vision...' : '✨ Re-run Vision AI'}
+                    </button>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
                     <div>

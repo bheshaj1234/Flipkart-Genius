@@ -20,8 +20,8 @@ export default function ProductGridRow({ product, onClose, onSave }) {
 
   // Dynamic Pricing states
   const [pricingEnabled, setPricingEnabled] = useState(product.dynamicPricing?.enabled || false);
-  const [minPrice, setMinPrice] = useState(product.dynamicPricing?.minPrice || 0);
-  const [maxPrice, setMaxPrice] = useState(product.dynamicPricing?.maxPrice || 0);
+  const [minPrice, setMinPrice] = useState(product.dynamicPricing?.minPrice ? String(product.dynamicPricing.minPrice) : '');
+  const [maxPrice, setMaxPrice] = useState(product.dynamicPricing?.maxPrice ? String(product.dynamicPricing.maxPrice) : '');
   const [pricingStrategy, setPricingStrategy] = useState(product.dynamicPricing?.pricingStrategy || 'match_lowest');
   const [festivalMode, setFestivalMode] = useState(product.dynamicPricing?.festivalMode || false);
   const [competitorPrice, setCompetitorPrice] = useState(product.dynamicPricing?.competitorPrice || 0);
@@ -59,8 +59,10 @@ export default function ProductGridRow({ product, onClose, onSave }) {
         }
       }
 
-      const floor = minPrice > 0 ? minPrice : Math.round((product.finalData.price || 500) * 0.6);
-      const ceil = maxPrice > 0 ? maxPrice : Math.round((product.finalData.price || 500) * 1.6);
+      const numMin = Number(minPrice) || 0;
+      const numMax = Number(maxPrice) || 0;
+      const floor = numMin > 0 ? numMin : Math.round((product.finalData.price || 500) * 0.6);
+      const ceil = numMax > 0 ? numMax : Math.round((product.finalData.price || 500) * 1.6);
       targetPrice = Math.max(targetPrice, floor);
       targetPrice = Math.min(targetPrice, ceil);
 
@@ -74,8 +76,8 @@ export default function ProductGridRow({ product, onClose, onSave }) {
     try {
       const res = await API.put(`/batches/products/${product._id}/pricing`, {
         enabled: pricingEnabled,
-        minPrice,
-        maxPrice,
+        minPrice: Number(minPrice) || 0,
+        maxPrice: Number(maxPrice) || 0,
         pricingStrategy,
         festivalMode
       });
@@ -583,7 +585,8 @@ export default function ProductGridRow({ product, onClose, onSave }) {
                           <input
                             type="number"
                             value={minPrice}
-                            onChange={(e) => setMinPrice(Number(e.target.value))}
+                            placeholder="0"
+                            onChange={(e) => setMinPrice(e.target.value)}
                             className="block w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-800 text-xs focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-medium"
                           />
                         </div>
@@ -592,7 +595,8 @@ export default function ProductGridRow({ product, onClose, onSave }) {
                           <input
                             type="number"
                             value={maxPrice}
-                            onChange={(e) => setMaxPrice(Number(e.target.value))}
+                            placeholder="0"
+                            onChange={(e) => setMaxPrice(e.target.value)}
                             className="block w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-800 text-xs focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-medium"
                           />
                         </div>

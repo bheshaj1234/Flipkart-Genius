@@ -215,9 +215,9 @@ Return ONLY valid JSON with keys: title, bulletPoints (array of 4), description 
 /**
  * FEATURE 2: Image-to-attribute extraction (color, pattern, material guess from photo)
  */
-export const extractImageAttributes = async (imageUrl) => {
-  return getCachedOrRun('cache:vision', imageUrl, async () => {
-    console.log(`🤖 AI Service extracting attributes from image URL: ${imageUrl}...`);
+export const extractImageAttributes = async (imageUrl, title = '') => {
+  return getCachedOrRun('cache:vision', `${imageUrl}:${title}`, async () => {
+    console.log(`🤖 AI Vision Service dynamically analyzing image URL for "${title}": ${imageUrl}...`);
 
     if (gemini) {
       try {
@@ -230,10 +230,16 @@ export const extractImageAttributes = async (imageUrl) => {
           imageBuffer = Buffer.from(base64Data, 'base64');
         } else {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          const timeoutId = setTimeout(() => controller.abort(), 8000);
           
           try {
-            const response = await fetch(imageUrl, { signal: controller.signal });
+            const response = await fetch(imageUrl, {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
+              },
+              signal: controller.signal
+            });
             clearTimeout(timeoutId);
             if (!response.ok) throw new Error(`HTTP error downloading image: ${response.statusText}`);
             imageBuffer = Buffer.from(await response.arrayBuffer());
@@ -267,7 +273,15 @@ export const extractImageAttributes = async (imageUrl) => {
           }
         };
 
-        const prompt = `Analyze this product photo. Return ONLY JSON with keys: color, pattern, material_guess, styleNotes. Be concise.`;
+        const prompt = `You are an expert e-commerce catalog auditor. Analyze this product photo for "${title || 'product'}".
+Extract the physical attributes of the item shown in the image.
+Return ONLY raw JSON with these exact keys:
+{
+  "color": "primary visual color of item in photo",
+  "pattern": "visual pattern of item (e.g. Solid, Matte, Printed, Glossy, Mesh)",
+  "material_guess": "physical material of item (e.g. Aluminum & Leatherette for headphones, ABS Plastic for mouse, 100% Cotton for kurta, Leather for watch)",
+  "styleNotes": "concise styling note"
+}`;
         
         const text = await generateWithFallback(prompt, imagePart);
         const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -282,7 +296,7 @@ export const extractImageAttributes = async (imageUrl) => {
           styleNotes: parsed.styleNotes || ''
         };
       } catch (err) {
-        console.warn('Gemini Vision API failed, falling back to keyword matcher:', err.message);
+        console.warn('Gemini Multimodal Vision API call failed, using intelligent category fallback:', err.message);
       }
     }
 

@@ -51,8 +51,8 @@ const worker = new Worker('upload-enrichment-queue', async (job) => {
     let imageReason = 'Image content verified';
     
     if (rawInput.imageUrls && rawInput.imageUrls.length > 0) {
-      emitLog(batchId, `[Row ${productId}] Running vision extraction on image...`);
-      extractedAttributes = await extractImageAttributes(rawInput.imageUrls[0]);
+      emitLog(batchId, `[Row ${productId}] Running dynamic Gemini Vision API extraction on image...`);
+      extractedAttributes = await extractImageAttributes(rawInput.imageUrls[0], rawInput.title);
       
       emitLog(batchId, `[Row ${productId}] Auditing image content compliance...`);
       const verification = await verifyImageContent(rawInput.title, rawInput.imageUrls[0]);

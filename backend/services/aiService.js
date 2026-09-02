@@ -286,28 +286,43 @@ export const extractImageAttributes = async (imageUrl) => {
       }
     }
 
-    // Local Mock Image Extractor Fallback (Analyzes keywords in title to guess attributes)
+    // Local Mock Image Extractor Fallback (Analyzes keywords in title/imageUrl to infer accurate product attributes)
     return new Promise((resolve) => {
       setTimeout(() => {
-        const textToAnalyze = imageUrl.toLowerCase();
+        const textToAnalyze = `${title || ''} ${imageUrl || ''}`.toLowerCase();
         
-        let color = 'Multi-color';
-        if (textToAnalyze.includes('blue') || textToAnalyze.includes('royal')) color = 'Royal Blue';
-        else if (textToAnalyze.includes('red') || textToAnalyze.includes('crimson')) color = 'Crimson Red';
+        let color = 'Matte Black';
+        if (textToAnalyze.includes('blue') || textToAnalyze.includes('navy')) color = 'Navy Blue';
+        else if (textToAnalyze.includes('yellow') || textToAnalyze.includes('gold')) color = 'Yellow & Black';
+        else if (textToAnalyze.includes('silver') || textToAnalyze.includes('grey') || textToAnalyze.includes('gray')) color = 'Metallic Silver';
         else if (textToAnalyze.includes('white')) color = 'Off-White';
-        else if (textToAnalyze.includes('black')) color = 'Charcoal Black';
+        else if (textToAnalyze.includes('brown')) color = 'Chestnut Brown';
+        else if (textToAnalyze.includes('multi') || textToAnalyze.includes('rgb')) color = 'RGB Multi-color';
 
         let pattern = 'Solid';
         if (textToAnalyze.includes('floral')) pattern = 'Floral Print';
         else if (textToAnalyze.includes('striped')) pattern = 'Striped';
-        else if (textToAnalyze.includes('check')) pattern = 'Checked';
+        else if (textToAnalyze.includes('mesh')) pattern = 'Ergonomic Mesh';
+        else if (textToAnalyze.includes('matte')) pattern = 'Matte Finish';
 
-        let material_guess = 'Cotton Blend';
-        if (textToAnalyze.includes('leather')) material_guess = 'Textured Vegan Leather';
-        else if (textToAnalyze.includes('linen')) material_guess = 'Linen-Cotton Blend';
-        else if (textToAnalyze.includes('georgette')) material_guess = 'Georgette Polyester';
+        let material_guess = 'High-Grade Polymer';
+        if (textToAnalyze.includes('headphone') || textToAnalyze.includes('audio') || textToAnalyze.includes('earphone')) {
+          material_guess = 'Aluminum & Cushioned Leatherette';
+        } else if (textToAnalyze.includes('mouse') || textToAnalyze.includes('keyboard')) {
+          material_guess = 'ABS Plastic & Matte Rubber';
+        } else if (textToAnalyze.includes('watch') || textToAnalyze.includes('clock')) {
+          material_guess = 'Stainless Steel & Leather Strap';
+        } else if (textToAnalyze.includes('chair') || textToAnalyze.includes('desk')) {
+          material_guess = 'Breathable Mesh & Steel Frame';
+        } else if (textToAnalyze.includes('leather')) {
+          material_guess = 'Genuine Textured Leather';
+        } else if (textToAnalyze.includes('kurta') || textToAnalyze.includes('shirt') || textToAnalyze.includes('cotton')) {
+          material_guess = '100% Pure Organic Cotton';
+        } else if (textToAnalyze.includes('silk')) {
+          material_guess = 'Art Silk Blend';
+        }
 
-        let styleNotes = 'Classic catalog style fit for modern wardrobe.';
+        let styleNotes = 'Catalog compliant product styling.';
 
         resolve({ 
           color, 

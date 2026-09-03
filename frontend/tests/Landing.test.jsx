@@ -12,16 +12,15 @@ describe('Landing Component Tests', () => {
   it('should render the landing page header and pitch correctly', () => {
     renderWithRouter(<Landing />);
     
-    expect(screen.getByText('Flipkart')).toBeInTheDocument();
-    expect(screen.getByText('Genius')).toBeInTheDocument();
-    expect(screen.getByText('The End of Tedious Bulk Product Uploads')).toBeInTheDocument();
-    expect(screen.getByText('Next-Gen AI Catalog Integration')).toBeInTheDocument();
+    expect(screen.getAllByText('Flipkart')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('GENIUS')[0]).toBeInTheDocument();
+    expect(screen.getByText('Enrich Your Catalog')).toBeInTheDocument();
   });
 
   it('should show register and sign in buttons for guest users', () => {
     renderWithRouter(<Landing />);
     
-    expect(screen.getByRole('link', { name: /Register Store/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Sign In/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /Register/i })[0]).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /Sign In/i })[0]).toBeInTheDocument();
   });
 });

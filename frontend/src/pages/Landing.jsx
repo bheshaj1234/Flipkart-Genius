@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { ShoppingBag, ArrowRight, Sparkles, Image, CheckCircle, Database, Layers, ShieldAlert, Cpu, Sun, Moon } from 'lucide-react';
 import FlipkartLogo from '../components/FlipkartLogo';
 import { SparklesCore } from '../components/ui/sparkles';
+import Navbar from '../components/Navbar';
 
 export default function Landing({ theme, toggleTheme }) {
   const navigate = useNavigate();
@@ -22,6 +23,18 @@ export default function Landing({ theme, toggleTheme }) {
     { name: "Myntra" },
     { name: "Nykaa" }
   ];
+
+  useEffect(() => {
+    if (window.location.hash) {
+      const id = window.location.hash.replace('#', '');
+      const element = document.getElementById(id);
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+    }
+  }, []);
 
   return (
     <div className={`min-h-screen font-sans transition-colors duration-500 flex flex-col justify-between relative overflow-hidden dot-grid ${
@@ -45,80 +58,9 @@ export default function Landing({ theme, toggleTheme }) {
         </>
       )}
 
-      {/* Navigation Header */}
-      <header className={`border-b sticky top-0 z-50 transition-colors duration-350 backdrop-blur-md ${
-        theme === 'dark' 
-          ? 'border-slate-900 bg-black/60' 
-          : 'border-slate-200 bg-white/70'
-      }`}>
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          
-          <div className="flex items-center gap-2">
-            <FlipkartLogo theme={theme} className="h-7 w-7" textClass="text-2xl" />
-            <span className="text-[#2874F0] font-black text-lg ml-1 tracking-wider">
-              GENIUS
-            </span>
-          </div>
+      {/* Shared High-Feature Navigation Bar */}
+      <Navbar theme={theme} toggleTheme={toggleTheme} />
 
-          {/* Navigation Links */}
-          <nav className="hidden md:flex items-center gap-8 text-xs font-semibold uppercase tracking-wider">
-            <Link to="/" className={theme === 'dark' ? 'text-white' : 'text-slate-950'}>Home</Link>
-            {isLoggedIn && (
-              <>
-                <Link to="/dashboard" className="hover:text-blue-500 transition-colors">Dashboard</Link>
-                <Link to="/upload" className="hover:text-blue-500 transition-colors">Bulk Upload</Link>
-              </>
-            )}
-          </nav>
-
-          {/* Header Actions */}
-          <div className="flex items-center gap-4">
-            
-            {/* Theme Toggle Button */}
-            <button
-              onClick={toggleTheme}
-              className={`p-2 rounded-xl border transition-all ${
-                theme === 'dark' 
-                  ? 'border-slate-800 hover:bg-slate-900 text-yellow-400' 
-                  : 'border-slate-200 hover:bg-slate-100 text-blue-600'
-              }`}
-              title="Toggle Theme"
-            >
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
-
-            {isLoggedIn ? (
-              <div className="flex items-center gap-4">
-                <span className={`hidden sm:inline-block text-xs font-mono ${
-                  theme === 'dark' ? 'text-slate-400' : 'text-slate-600'
-                }`}>
-                  Store: <strong className={theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}>{storeName}</strong>
-                </span>
-                <button
-                  onClick={handleSignOut}
-                  className="text-xs font-bold uppercase tracking-wider text-rose-500 hover:text-rose-400 transition-colors border border-rose-950/40 bg-rose-950/10 rounded-xl px-4 py-2"
-                >
-                  Sign Out
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-4">
-                <Link to="/login" className={`text-xs font-bold uppercase tracking-wider transition-colors ${
-                  theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'
-                }`}>
-                  Sign In
-                </Link>
-                <Link
-                  to="/register"
-                  className="inline-flex items-center justify-center px-4 py-2 border transition-all active:scale-[0.98] btn-classy btn-classy-primary"
-                >
-                  Register
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
 
       {/* Hero Section */}
       <section className="relative pt-20 pb-24 px-6 max-w-7xl mx-auto flex flex-col items-center text-center z-10">
